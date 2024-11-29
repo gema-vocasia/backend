@@ -58,6 +58,7 @@ const userController = {
         password,
         phoneNumber,
         photo_url: defaultPhotoUrl,
+        password,
       });
 
       ResponseAPI.success(res, {
@@ -67,6 +68,7 @@ const userController = {
           email: newUser.email,
           phoneNumber: newUser.phoneNumber,
           photo_url: newUser.photo_url,
+          password: newUser.password,
         },
       });
     } catch (error) {
