@@ -3,6 +3,9 @@ const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
+    _id: {
+      type: mongoose.Types.ObjectId,
+    },
     name: {
       type: String,
       required: [true, "Nama Wajib Diisi"],
@@ -22,12 +25,11 @@ const userSchema = new mongoose.Schema(
     phoneNumber: {
       type: String,
       default: "",
-      minlength: 11,
     },
     password: {
       type: String,
-      required: [true, "password is required."],
-      minlength: [6, "password must be at least 6 characters long."],
+      required: [true, "Password Wajib Diisi"],
+      minlength: [6, "Password Wajib Minimal 6 Karakter"],
     },
     nationalIdentityCard: {
       type: String,
@@ -57,12 +59,15 @@ const phoneRegex = /^(?:\+62|62|0)8[1-9]\d{8,9}$/;
 
 userSchema.pre("save", async function (next) {
   if (this.phoneNumber) {
+    // Menghapus semua spasi
     this.phoneNumber = this.phoneNumber.replace(/\s+/g, "");
 
+    // Mengganti awalan '0' dengan '+62' jika ada
     if (this.phoneNumber.startsWith("0")) {
       this.phoneNumber = "+62" + this.phoneNumber.substring(1);
     }
 
+    // Validasi nomor telepon menggunakan regex
     if (!phoneRegex.test(this.phoneNumber)) {
       const error = new Error("Nomor telepon tidak valid");
       return next(error);
