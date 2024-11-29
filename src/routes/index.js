@@ -3,7 +3,7 @@ const routes = express.Router();
 const testRoutes = require("./testRoutes");
 const userRoutes = require("./userRoutes");
 
-// List of routes
+//  List of routes
 routes.use(testRoutes);
 routes.use(userRoutes);
 
