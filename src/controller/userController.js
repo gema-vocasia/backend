@@ -15,12 +15,12 @@ const userController = {
 
       const findUser = await User.findOne({ email });
       if (!findUser) {
-        return ResponseAPI.error(res, "Email Atau Password Salah", 401);
+        return ResponseAPI.error(res, "wrong email and password", 401);
       }
 
       const isPasswordValid = await findUser.comparePassword(password);
       if (!isPasswordValid) {
-        return ResponseAPI.error(res, "Email Atau Password Salah", 401);
+        return ResponseAPI.error(res, "wrong email and password", 401);
       }
 
       const token = generateToken(findUser._id);
@@ -42,21 +42,31 @@ const userController = {
   // User register
   async register(req, res) {
     try {
-      const { name, email, password } = req.body;
+      const { name, email, password, phoneNumber, photo_url } = req.body;
 
       const checkUser = await User.findOne({ email });
 
       if (checkUser) {
-        return ResponseAPI.error(res, "User Sudah Ada", 409);
+        return ResponseAPI.error(res, "this user already exists", 409);
       }
 
-      const newUser = await User.create({ name, email, password });
+      const defaultPhotoUrl = "https://example.com/default-profile.png";
+
+      const newUser = await User.create({
+        name,
+        email,
+        password,
+        phoneNumber,
+        photo_url: defaultPhotoUrl,
+      });
 
       ResponseAPI.success(res, {
         user: {
           id: newUser._id,
           name: newUser.name,
           email: newUser.email,
+          phoneNumber: newUser.phoneNumber,
+          photo_url: newUser.photo_url,
         },
       });
     } catch (error) {
