@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const campaignController = require("../controller/campaignController");
-const auth = require("../middleware/auth");
+const { auth, checkCategory } = require("../middleware");
+const { campaignController } = require("../controller");
 
-router.post("/campaign", auth, campaignController.Create);
+router.post("/campaign", auth, checkCategory, campaignController.Create);
 router.get("/campaigns", campaignController.Read);
 router.get("/campaign/:_id", campaignController.ReadById);
-router.put("/campaign/:_id", auth, campaignController.Update);
+router.put("/campaign/:_id", auth, checkCategory, campaignController.Update);
 router.delete("/campaign/:_id", auth, campaignController.Delete);
 
 module.exports = router;

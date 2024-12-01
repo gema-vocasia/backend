@@ -3,6 +3,11 @@ const { Category}= require("../models");
 
 checkCategory = async (req, res, next) => {
   try {
+    
+    if(!req.body.categoryId){
+        return next(); 
+    }
+
     // Cek Apakah Category Ada
     const checkCategory = await Category.findOne({ _id: req.body.categoryId, deleteAt: null });
 

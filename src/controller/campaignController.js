@@ -3,27 +3,15 @@ const ResponseAPI = require("../utils/response");
 const Campaign = require("../models/Campaign");
 const User = require("../models/User");
 const Category = require("../models/Category");
+const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
 
 const campaignController = {
   // Create Campaign
-  async Create(req, res) {
+  async Create(req, res, next) {
     try {
       const { title, description, photo, startDate, endDate, targetAmount, categoryId } = req.body;
+
       const userId = req.user._id;
-
-      // Validasi user yang membuat campaign
-      const findUser = await User.findOne({_id: userId, deletedAt: null});
-
-      if (!findUser) {
-        return ResponseAPI.error(res, "User Tidak Ditemukan", 404);
-      }
-
-      // Validasi kategori
-      const findCategory = await Category.findOne({_id: categoryId, deletedAt: null});
-
-      if (!findCategory) {
-        return ResponseAPI.error(res, "Category Tidak Ditemukan", 404);
-      }
 
       // Membuat campaign baru
       const newCampaign = await Campaign.create({
@@ -39,58 +27,59 @@ const campaignController = {
 
       ResponseAPI.success(res, newCampaign);
     } catch (error) {
-      ResponseAPI.serverError(res, error);
+      next(error);
     }
   },
 
   // Read Campaign by ID
-  async ReadById(req, res) {
+  async ReadById(req, res, next) {
     try {
       const findCampaign = await Campaign.findOne({ _id: req.params._id, deletedAt: null });
 
       if (!findCampaign) {
-        return ResponseAPI.error(res, "Campaign Tidak Ditemukan", 404);
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        })
       }
 
       ResponseAPI.success(res, findCampaign);
     } catch (error) {
-      ResponseAPI.serverError(res, error);
+      next(error);
     }
   },
 
   // Read All Campaign
-  async Read(req, res) {
+  async Read(req, res, next) {
     try {
       const findCampaign = await Campaign.find({ deletedAt: null }); // Hanya campaign aktif
 
       if (findCampaign.length === 0) {
-        return ResponseAPI.error(res, "Campaign Tidak Ditemukan", 404);
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        })
       }
 
       ResponseAPI.success(res, findCampaign);
     } catch (error) {
-      ResponseAPI.serverError(res, error);
+      next(error);
     }
   },
 
   // Update Campaign
-  async Update(req, res) {
+  async Update(req, res, next) {
     try {
-        const { title, description, photo, startDate, endDate, targetAmount,categoryId } = req.body;
+      const { title, description, photo, startDate, endDate, targetAmount, categoryId } = req.body;
 
-        const userId = req.user._id;
-
-        // Validasi user yang membuat campaign
-        const findUser = await User.findOne({ _id: userId, deletedAt: null });
-
-        if (!findUser) {
-            return ResponseAPI.error(res, "User Tidak Ditemukan", 404);
-        }
-
+      // Validasi campaign
       const findCampaign = await Campaign.findOne({ _id: req.params._id, deletedAt: null });
 
       if (!findCampaign) {
-        return ResponseAPI.error(res, "Campaign Tidak Ditemukan", 404);
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        })
       }
 
       // Update properti jika ada
@@ -100,28 +89,18 @@ const campaignController = {
       if (startDate) findCampaign.startDate = startDate;
       if (endDate) findCampaign.endDate = endDate;
       if (targetAmount) findCampaign.targetAmount = targetAmount;
-
-      // Validasi kategori
-        if(categoryId){
-            const findCategory = await Category.findOne({ _id: categoryId, deletedAt: null });
-            
-            if (!findCategory) {
-                return ResponseAPI.error(res, "Category Tidak Ditemukan", 404);
-            }
-
-            findCampaign.categoryId = categoryId;
-        }
+      if (categoryId) findCampaign.categoryId = categoryId;
 
       await findCampaign.save();
 
       ResponseAPI.success(res, findCampaign);
     } catch (error) {
-      ResponseAPI.serverError(res, error);
+      next(error);
     }
   },
 
   // Soft Delete Campaign
-  async Delete(req, res) {
+  async Delete(req, res, next) {
     try {
       const findCampaign = await Campaign.findOneAndUpdate(
         { _id: req.params._id, deletedAt: null },
@@ -130,12 +109,15 @@ const campaignController = {
       );
 
       if (!findCampaign) {
-        return ResponseAPI.error(res, "Campaign Tidak Ditemukan", 404);
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        })
       }
 
       ResponseAPI.success(res, findCampaign);
     } catch (error) {
-      ResponseAPI.serverError(res, error);
+      next(error);
     }
   },
 };
