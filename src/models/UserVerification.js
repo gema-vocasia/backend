@@ -1,13 +1,14 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
 
 const userVerificationSchema = new mongoose.Schema(
   {
     userId: {
       type: String,
+      required: true,
     },
-    uniqeId: {
+    uniqueString: {
       type: String,
+      required: true,
     },
     createdAt: {
       type: Date,

@@ -7,6 +7,7 @@ const ResponseAPI = require("../utils/response");
 const User = require("../models/User");
 const UserVerification = require("../models/UserVerification");
 const { jwtSecret, jwtExpiresIn } = require("../config/env");
+const fs = require("fs");
 
 require("dotenv").config();
 
@@ -121,30 +122,27 @@ const userController = {
   async sendVerificationEmail({ _id, email }) {
     try {
       const currentUrl = "http://localhost:8080/api/v1/user";
-      const uniqueString = `${uuidv4()}_${_id}`;
-
-      // Hash string unik
-      const hashedUniqueString = await bcrypt.hash(uniqueString, 10);
+      const uniqueString = uuidv4();
 
       // Simpan ke koleksi verifikasi
       await UserVerification.create({
         userId: _id,
         uniqueString: uniqueString,
         createdAt: Date.now(),
-        expiresAt: Date.now() + 3600000,
+        expiresAt: Date.now() + 3600000, // 1 jam kedepan
       });
 
-      // Opsi email
+      const templatePath = path.join("src", "views", "template.html");
+      const emailTemplate = fs.readFileSync(templatePath, "utf-8");
+      const customizedTemplate = emailTemplate
+        .replace("${currentUrl}", currentUrl)
+        .replace("${uniqueString}", uniqueString);
+
       const mailOptions = {
         from: process.env.AUTH_EMAIL,
         to: email,
         subject: "Account Verification",
-        html: `
-        <p>Hi there,</p>
-        <p>Click the link below to verify your email:</p>
-        <a href="${currentUrl}/verify/${uniqueString}">Verify Email</a>
-        <p>This link expires in 1 hour.</p>
-      `,
+        html: customizedTemplate,
       };
 
       // Kirim email
@@ -156,12 +154,10 @@ const userController = {
     }
   },
 
-  // **Verify Email**
   async verifyEmail(req, res) {
     const { uniqueString } = req.params;
 
     try {
-      // Cari record berdasarkan userId
       const record = await UserVerification.findOne({ uniqueString });
 
       if (!record) {
@@ -170,29 +166,22 @@ const userController = {
           .json({ message: "Verification link is invalid or expired." });
       }
 
-      const { expiresAt, uniqueString: hashedUniqueString, userId } = record;
+      const { expiresAt, userId } = record;
 
       // Periksa apakah tautan sudah kadaluarsa
       if (Date.now() > expiresAt) {
         await UserVerification.deleteOne({ userId }); // Hapus record lama
         return res.status(400).json({
-          message: "Verification link expired. Please register again.",
+          message:
+            "Verification link expired. Please request a new verification email.",
         });
       }
-
-      // Bandingkan uniqueString dengan hash
-      const isMatch = await bcrypt.compare(uniqueString, hashedUniqueString);
-      if (!isMatch) {
-        return res
-          .status(400)
-          .json({ message: "Invalid verification details." });
-      }
-
+      const verifed = path.join(__dirname, "..", "views", "verified.html");
       // Update status pengguna menjadi "verified"
       await User.findByIdAndUpdate(userId, { verified: true });
-      await UserVerification.deleteOne({ userId }); // Hapus record setelah verifikasi
-
-      res.status(200).json({ message: "Email verified successfully." });
+      await UserVerification.deleteOne({ userId });
+      res.status(200).sendFile(verifed);
+      // res.status(200).json({ message: "Email verified successfully." });
     } catch (error) {
       console.error("Error verifying email:", error);
       res.status(500).json({ message: "Internal Server Error." });
