@@ -1,18 +1,18 @@
 const mongoose = require("mongoose");
 const Category = require("../models/Category");
 const ResponseAPI = require("../utils/response");
+const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
 
 const categoryController = {
-  createCategory: async (req, res) => {
+  createCategory: async (req, res, next) => {
     try {
       const { title, description } = req.body;
 
       if (!title || !description) {
-        return ResponseAPI.error(
-          res,
-          "Title and description are required",
-          400
-        );
+        return next({
+          name: errorName.BAD_REQUEST,
+          message: errorMsg.TITLE_DESCRIPTION_REQUIRED,
+        });
       }
 
       const category = new Category({
@@ -30,21 +30,22 @@ const categoryController = {
       );
     } catch (error) {
       console.error("Error creating category:", error);
-      return ResponseAPI.serverError(res, error);
+      next(error)
     }
   },
 
-  getAllCategories: async (req, res) => {
+  getAllCategories: async (req, res, next) => {
     try {
       const categories = await Category.find({ isDeleted: false });
       return ResponseAPI.success(res, { categories }, "Categories retrieved");
+
     } catch (error) {
       console.error("Error fetching categories:", error);
-      return ResponseAPI.serverError(res, error);
+      next(error)
     }
   },
 
-  deleteCategory: async (req, res) => {
+  deleteCategory: async (req, res, next) => {
     try {
       const { id } = req.params;
 
@@ -55,7 +56,10 @@ const categoryController = {
       );
 
       if (!category) {
-        return ResponseAPI.notFound(res, "Category not found");
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CATEGORY_NOT_FOUND,
+        })
       }
 
       return ResponseAPI.success(
@@ -63,9 +67,11 @@ const categoryController = {
         { category },
         "Category deleted successfully"
       );
+
+      
     } catch (error) {
       console.error("Error deleting category:", error);
-      return ResponseAPI.serverError(res, error);
+      next(error)
     }
   },
 };

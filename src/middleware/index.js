@@ -1,9 +1,11 @@
 const checkUser = require("./checkUser");
-const errorHandling = require("./errorHandling");
+const checkCategory = require("./checkCategory");
+const { errorHandling } = require("./errorHandling");
 const auth = require("./auth");
 
 module.exports = {
   checkUser,
+  checkCategory,
   errorHandling,
   auth,
 };

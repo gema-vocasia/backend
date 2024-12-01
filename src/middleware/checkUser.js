@@ -4,7 +4,7 @@ const User = require("../models/User");
 checkUser = async (req, res, next) => {
     try {
         // Cek Apakah User Ada
-        const checkUser = await User.findOne({ _id: req.user._id, deleteAt: null });
+        const checkUser = await User.findOne({ _id: req.body._id, deleteAt: null });
 
         // Jika User Tidak Ada
         if (!checkUser) {

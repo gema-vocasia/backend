@@ -5,7 +5,7 @@ const userRoutes = require("./userRoutes");
 const categoryRoutes = require("./categoryRoutes");
 const campaignRoutes = require("./campaignRoutes");
 const donationRoutes = require("./donationRoutes");
-const { errorHandling } = require("../middleware/errorHandling");
+const  { errorHandling } = require("../middleware");
 
 // List of routes
 routes.use(testRoutes);
