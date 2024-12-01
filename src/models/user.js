@@ -44,6 +44,13 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    joinAt: {
+      type: Date,
+      default: Date.now,
+    },
+    verified: {
+      type: Boolean,
+    },
   },
   {
     timestamps: true,
