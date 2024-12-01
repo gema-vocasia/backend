@@ -3,9 +3,6 @@ const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
-    _id: {
-      type: mongoose.Types.ObjectId,
-    },
     name: {
       type: String,
       required: [true, "Nama Wajib Diisi"],
@@ -37,7 +34,7 @@ const userSchema = new mongoose.Schema(
     },
     photo_url: {
       type: String,
-      default: "",
+      default: "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
     },
     isKYC: {
       type: Boolean,
