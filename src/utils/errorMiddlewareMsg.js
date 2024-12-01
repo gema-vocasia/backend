@@ -12,6 +12,7 @@ const errorMsg = {
   TITLE_DESCRIPTION_REQUIRED: "Title and Description are Required",
   CATEGORY_NOT_FOUND: "Category Not Found",
   CAMPAIGN_NOT_FOUND: "Campaign Not Found",
+  DONATION_NOT_FOUND: "Donation Not Found",
 };
 
 export { errorName, errorMsg };

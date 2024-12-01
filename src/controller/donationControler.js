@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const ResponseAPI = require("../utils/response");
+const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
+
 const Campaign = require("../models/Campaign");
 const User = require("../models/User");
 const Donation = require("../models/Donation");
@@ -12,58 +14,50 @@ const donationController = {
 
             const userId = req.user._id;
 
-            // Validasi user yang membuat Donate
-            const findUser = await User.findOne({ _id: userId, deletedAt: null });
-
-            if (!findUser) {
-                return ResponseAPI.error(res, "User Tidak Ditemukan", 404);
-            }
-
-            // Validasi campaign
-            const findCampaign = await Campaign.findOne({ _id: campaignId, deletedAt: null});
-
-            if (!findCampaign) {
-                return ResponseAPI.error(res, "Campaign Tidak Ditemukan", 404);
-            }
-
             // Membuat Donation Baru
             const newDonation = await Donation.create({ userId, campaignId, amount, name, statusPayment });
 
             ResponseAPI.success(res, newDonation);
 
         } catch (error) {
-        ResponseAPI.serverError(res, error);
+            next(error);
         }
     },
 
     // Read Donation by ID
-    async ReadById(req, res) {
+    async ReadById(req, res, next) {
         try {
             const findDonation = await Donation.findOne({ _id: req.params._id, deletedAt: null});
 
             if (!findDonation) {
-                return ResponseAPI.error(res, "Donasi Tidak Ditemukan", 404);
+                return next({
+                    name: errorName.NOT_FOUND,
+                    message: errorMsg.DONATION_NOT_FOUND,
+                })
             }
 
         ResponseAPI.success(res, findDonation);
         } catch (error) {
-        ResponseAPI.serverError(res, error);
+            next(error);
         }
     },
 
     // Read All Donation
-    async ReadByCampaignId(req, res) {
+    async ReadByCampaignId(req, res, next) {
         try {
         const findDonation = await Donation.find({campaignId: req.params._id, deletedAt: null });
 
         console.log(req.params._id);
         if (findDonation.length === 0) {
-            return ResponseAPI.error(res, "Donation Tidak Ditemukan", 404);
+            return next({
+                name: errorName.NOT_FOUND,
+                message: errorMsg.DONATION_NOT_FOUND,
+            })
         }
 
         ResponseAPI.success(res, findDonation);
         } catch (error) {
-        ResponseAPI.serverError(res, error);
+            next(error);
         }
     },
 
@@ -72,28 +66,13 @@ const donationController = {
         try {
         const { campaignId, amount, name, statusPayment } = req.body;
 
-        const userId = req.user._id;
-
-        // Validasi user yang membuat Donation
-        const findUser = await User.findOne({ _id: userId, deletedAt: null });
-
-        if (!findUser) {
-            return ResponseAPI.error(res, "User Tidak Ditemukan", 404);
-        }
-
-        // Validasi campaign
-        if(campaignId){
-            const findCampaign = await Campaign.findOne({ _id: campaignId, deletedAt: null });
-
-            if (!findCampaign) {
-            return ResponseAPI.error(res, "Campaign Tidak Ditemukan", 404);
-            }
-        }
-
         const findDonation = await Donation.findOne({ _id: req.params._id, deletedAt: null });
 
         if (!findDonation) {
-            return ResponseAPI.error(res, "Donasi Tidak Ditemukan", 404);
+            return next({
+                name: errorName.NOT_FOUND,
+                message: errorMsg.DONATION_NOT_FOUND,
+            })
         }
 
         // Update properti jika ada
