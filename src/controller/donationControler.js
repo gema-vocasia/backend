@@ -42,6 +42,28 @@ const donationController = {
         }
     },
 
+    // Read Donation by UserId
+    async ReadByUserId(req, res, next) {
+    try {
+        const userId = req.user._id;
+
+        // Mencari semua donasi berdasarkan userId dan memastikan donasi aktif (deletedAt: null)
+        const findDonationsByUser = await Donation.find({ userId: userId, deletedAt: null });
+
+        if (findDonationsByUser.length === 0) {
+        return next({
+            name: errorName.NOT_FOUND,
+            message: errorMsg.DONATION_NOT_FOUND,
+        });
+        }
+
+        ResponseAPI.success(res, findDonationsByUser);
+
+    } catch (error) {
+        next(error);
+    }
+    },
+
     // Read All Donation
     async ReadByCampaignId(req, res, next) {
         try {
