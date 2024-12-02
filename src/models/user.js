@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema(
     },
     nationalIdentityCard: {
       type: String,
-      default: "",
+      default: null,
     },
     photo_url: {
       type: String,

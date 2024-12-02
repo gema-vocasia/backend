@@ -245,6 +245,59 @@ const userController = {
       next(error);
     }
   },
+
+  async Upload(req, res, next) {
+    try {
+      // Cek apakah campaign ada dan belum dihapus
+      const checkOldFile = await User.findOne({
+        _id: req.user._id,
+        deleteAt: null,
+      });
+
+      // Jika ada file lama, hapus file tersebut
+      if (checkOldFile && checkOldFile.nationalIdentityCard) {
+        const oldFilePath = path.join(
+          __dirname,
+          "..",
+          "..",
+          "public",
+          "upload",
+          checkOldFile.nationalIdentityCard
+        );
+        console.log("Path yang dibentuk:", oldFilePath);
+
+        // Menggunakan fs.promises.unlink untuk menghapus file dengan menangani error
+        fs.unlink(oldFilePath, (err) => {
+          if (err) console.log(err);
+          else {
+            console.log(`\nDeleted file: ${checkOldFile.photo}`);
+          }
+        });
+      }
+
+      // Update User dengan foto baru
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: req.user._id, deleteAt: null },
+        { nationalIdentityCard: req.file.filename, updateAt: new Date() },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.USER_NOT_FOUND,
+        });
+      }
+
+      // Kirim respons sukses setelah update
+      return ResponseAPI.success(res, updatedUser); // Pastikan return di sini
+    } catch (error) {
+      // Tangani error secara umum
+      console.error(error);
+      next(error);
+    }
+  },
+
 };
 
 module.exports = userController;

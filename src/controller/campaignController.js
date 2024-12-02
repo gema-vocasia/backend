@@ -4,6 +4,9 @@ const Campaign = require("../models/Campaign");
 const User = require("../models/User");
 const Category = require("../models/Category");
 const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
+const path = require("path");
+const fs = require("fs");
+
 
 const campaignController = {
   // Create Campaign
@@ -88,6 +91,56 @@ const campaignController = {
       next(error);
     }
   },
+
+  async Upload(req, res, next) {
+    try {
+        // Cek apakah campaign ada dan belum dihapus
+        const checkOldFile = await Campaign.findOne({ _id: req.params._id, deleteAt: null });
+
+        // Jika ada file lama, hapus file tersebut
+        if (checkOldFile && checkOldFile.photo) {
+            const oldFilePath = path.join(
+              __dirname,
+              "..",
+              "..",
+              "public",
+              "upload",
+              checkOldFile.photo
+            );
+            console.log("Path yang dibentuk:", oldFilePath);
+
+            // Menggunakan fs.promises.unlink untuk menghapus file dengan menangani error
+            fs.unlink(oldFilePath, (err) => {
+              if (err) console.log(err);
+              else {
+                console.log("\nDeleted file: example_file.txt");
+              }
+            });
+        }
+
+        // Update campaign dengan foto baru
+        const updatedCampaign = await Campaign.findOneAndUpdate(
+            { _id: req.params._id, deleteAt: null },
+            { photo: req.file.filename, updateAt: new Date() },
+            { new: true }
+        );
+
+        // Jika campaign tidak ditemukan
+        if (!updatedCampaign) {
+            return next({
+                name: 'NotFoundError',
+                message: 'Campaign tidak ditemukan'
+            });
+        }
+
+        // Kirim respons sukses setelah update
+        return ResponseAPI.success(res, updatedCampaign);  // Pastikan return di sini
+    } catch (error) {
+        // Tangani error secara umum
+        console.error(error);
+        next(error);
+    }
+},
 
   // Update Campaign
   async Update(req, res, next) {
