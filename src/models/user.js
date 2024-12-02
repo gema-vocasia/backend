@@ -3,6 +3,10 @@ const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
+    _id: {
+      type: mongoose.Types.ObjectId,
+      default: () => new mongoose.Types.ObjectId(),
+    },
     name: {
       type: String,
       required: [true, "Nama Wajib Diisi"],
@@ -39,6 +43,13 @@ const userSchema = new mongoose.Schema(
     isKYC: {
       type: Boolean,
       default: false,
+    },
+    joinAt: {
+      type: Date,
+      default: Date.now,
+    },
+    verified: {
+      type: Boolean,
     },
   },
   {
