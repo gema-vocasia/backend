@@ -31,6 +31,28 @@ const campaignController = {
     }
   },
 
+  // Get Campaign by User ID
+  async ReadByUserId(req, res, next) {
+    try {
+      const userId = req.user._id;
+
+      // Mencari campaign berdasarkan userId dan memastikan campaign aktif (deletedAt: null)
+      const findCampaignsByUser = await Campaign.find({ userId: userId, deletedAt: null });
+
+      if (findCampaignsByUser.length === 0) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        });
+      }
+
+      ResponseAPI.success(res, findCampaignsByUser);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+
   // Read Campaign by ID
   async ReadById(req, res, next) {
     try {

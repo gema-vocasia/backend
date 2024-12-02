@@ -15,5 +15,8 @@ routes.use(campaignRoutes);
 routes.use(donationRoutes);
 routes.use(errorHandling);
 
+routes.all("*", (req, res) => {
+  res.status(404).send("Page not found");
+});
 
 module.exports = routes;
