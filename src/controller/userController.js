@@ -7,7 +7,9 @@ const ResponseAPI = require("../utils/response");
 const User = require("../models/User");
 const UserVerification = require("../models/UserVerification");
 const { jwtSecret, jwtExpiresIn } = require("../config/env");
+const PasswordReset = require("../models/PasswordReset");
 const fs = require("fs");
+const { reset } = require("nodemon");
 
 require("dotenv").config();
 
@@ -191,6 +193,105 @@ const userController = {
   // **Verified Page**
   async verified(req, res) {
     res.sendFile(path.join(__dirname, "../views/verified.html"));
+  },
+
+  async requestResetPassword(req, res) {
+    const { email, redirectUrl } = req.body;
+
+    if (!email || !redirectUrl) {
+      return res
+        .status(400)
+        .json({ error: "Email and redirectUrl are required" });
+    }
+
+    try {
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const resetString = uuidv4();
+      const hashedResetString = await bcrypt.hash(resetString, 12);
+
+      console.log("Reset string yang dibuat:", resetString);
+      console.log("Reset string yang di-hash:", hashedResetString);
+
+      await PasswordReset.create({
+        userId: user._id,
+        resetString: hashedResetString,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 3600000, // 1 jam
+      });
+
+      const mailOptions = {
+        from: process.env.AUTH_EMAIL,
+        to: email,
+        subject: "Password Reset Request",
+        html: `<p>Click the link below to reset your password:</p>
+             <a href="${redirectUrl}?resetString=${resetString}">Reset Password</a>`,
+      };
+
+      console.log(
+        "Reset URL dikirim:",
+        `${redirectUrl}?resetString=${resetString}`
+      );
+      await transporter.sendMail(mailOptions);
+      res
+        .status(200)
+        .json({ message: "Password reset email sent successfully" });
+    } catch (error) {
+      console.error("Error in requestResetPassword:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+
+  async verifyAndResetPassword(req, res) {
+    const { email, resetString, newPassword } = req.body;
+    if (!email || !resetString || !newPassword) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    try {
+      // Cari user berdasarkan email
+      const user = await User.findOne({ email });
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      // Cari record reset password terkait user
+      const resetRecord = await PasswordReset.findOne({ userId: user._id });
+      if (!resetRecord)
+        return res.status(404).json({ error: "No reset record" });
+
+      // Dapatkan data resetString dan expiredAt
+      const { expiresAt, resetString: hashedResetString } = resetRecord;
+
+      // Cek apakah resetString sudah expired
+      if (Date.now() > expiresAt) {
+        await PasswordReset.deleteOne({ userId: user._id });
+        return res.status(400).json({ error: "Reset expired" });
+      }
+
+      // Bandingkan reset string dari request dengan yang ada di database
+      const isMatch = await bcrypt.compare(resetString, hashedResetString);
+      if (!isMatch)
+        return res.status(400).json({ error: "Invalid reset string" });
+
+      // Hash password baru
+      const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+      // Update password user
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { password: hashedNewPassword } }
+      );
+
+      // Hapus semua record reset password terkait user
+      await PasswordReset.deleteMany({ userId: user._id });
+
+      res.status(200).json({ message: "Password updated successfully" });
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   },
 
   // **Get Profile**
