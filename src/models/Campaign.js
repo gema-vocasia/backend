@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
     {
@@ -25,7 +24,7 @@ const userSchema = new mongoose.Schema(
         description: {
             type: String,
             required: [true, "Deskripsi Wajib Diisi"],
-            minlength: [30, "Password Wajib Minimal 6 Karakter"],
+            minlength: [30, "Deskripsi Wajib Minimal 6 Karakter"],
         },
         statusCampaign: {
             type: String,
@@ -34,6 +33,10 @@ const userSchema = new mongoose.Schema(
         targetAmount: {
             type: Number,
             default: 10000,
+        },
+        totalDonation: {
+            type: Number,
+            default: 0,
         },
         startDate: {
             type: Date,

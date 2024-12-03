@@ -1,11 +1,20 @@
 const mongoose = require("mongoose");
 const ResponseAPI = require("../utils/response");
-const Campaign = require("../models/Campaign");
-const User = require("../models/User");
-const Category = require("../models/Category");
+const { Campaign, Donation } = require("../models");
 const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
 const path = require("path");
 const fs = require("fs");
+
+const updateTotalDonation = async (campaignId) => {
+  const donations = await Donation.find({ campaignId, deletedAt: null });
+
+  let totalDonation = 0;
+  donations.forEach((donation) => {
+    totalDonation += donation.amount;
+  });
+
+  await Campaign.findOneAndUpdate({ _id: campaignId }, { totalDonation });
+};
 
 
 const campaignController = {
@@ -42,6 +51,14 @@ const campaignController = {
       // Mencari campaign berdasarkan userId dan memastikan campaign aktif (deletedAt: null)
       const findCampaignsByUser = await Campaign.find({ userId: userId, deletedAt: null });
 
+      const updateAllDonation = async () => {
+        findCampaignsByUser.forEach((campaign) => {
+          updateTotalDonation(campaign._id);
+        });
+      }
+
+      await updateAllDonation();
+
       if (findCampaignsByUser.length === 0) {
         return next({
           name: errorName.NOT_FOUND,
@@ -60,6 +77,8 @@ const campaignController = {
   async ReadById(req, res, next) {
     try {
       const findCampaign = await Campaign.findOne({ _id: req.params._id, deletedAt: null });
+
+      updateTotalDonation(req.params._id);
 
       if (!findCampaign) {
         return next({

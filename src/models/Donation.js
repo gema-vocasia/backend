@@ -16,7 +16,12 @@ const donationSchema = new mongoose.Schema(
             type: Number,
             required: [true, "Jumlah Donasi Wajib Diisi"],
         },
-            donateDate: {
+        comment: {
+            type: String,
+            default: null,
+            maxLength: [255, "Komentar Tidak Boleh Lebih Dari 255 Karakter"],
+        },
+        donateDate: {
             type: Date,
             default: Date.now(),
         },

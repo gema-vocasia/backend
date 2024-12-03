@@ -1,21 +1,18 @@
 const mongoose = require("mongoose");
 const ResponseAPI = require("../utils/response");
 const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
-
-const Campaign = require("../models/Campaign");
-const User = require("../models/User");
-const Donation = require("../models/Donation");
+const { Donation } = require("../models");
 
 const donationController = {
     // Create Donation
     async Create(req, res) {
         try {
-            const { campaignId, amount, name, statusPayment } = req.body;
+            const { campaignId, amount, name, statusPayment, comment } = req.body;
 
             const userId = req.user._id;
 
             // Membuat Donation Baru
-            const newDonation = await Donation.create({ userId, campaignId, amount, name, statusPayment });
+            const newDonation = await Donation.create({ userId, campaignId, amount, name, statusPayment, comment });
 
             ResponseAPI.success(res, newDonation);
 
@@ -28,6 +25,7 @@ const donationController = {
     async ReadById(req, res, next) {
         try {
             const findDonation = await Donation.findOne({ _id: req.params._id, deletedAt: null});
+
 
             if (!findDonation) {
                 return next({
