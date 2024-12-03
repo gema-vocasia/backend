@@ -16,4 +16,4 @@ const errorMsg = {
   VERIFICATION_LINK_EXPIRED: "Verification Link invalid Or Expired",
 };
 
-export { errorName, errorMsg };
+module.exports = { errorName, errorMsg };
