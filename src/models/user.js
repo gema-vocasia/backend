@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const ROLES = require("../utils/roles");
 
 const userSchema = new mongoose.Schema(
   {
@@ -47,6 +48,11 @@ const userSchema = new mongoose.Schema(
     joinAt: {
       type: Date,
       default: Date.now,
+    },
+    role: {
+      type: String,
+      enum: [ROLES.ADMIN, ROLES.USER],
+      default: ROLES.USER,
     },
     verified: {
       type: Boolean,

@@ -3,14 +3,15 @@ const nodemailer = require("nodemailer");
 const path = require("path");
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
-const ResponseAPI = require("../utils/response");
-const User = require("../models/User");
-const UserVerification = require("../models/UserVerification");
-const { jwtSecret, jwtExpiresIn } = require("../config/env");
-const PasswordReset = require("../models/PasswordReset");
-const { errorMsg, errorName } = require("../utils/errorMiddlewareMsg");
 const fs = require("fs");
 const { reset } = require("nodemon");
+
+
+const ResponseAPI = require("../utils/response");
+const { User, UserVerification, PasswordReset } = require("../models");
+const { jwtSecret, jwtExpiresIn } = require("../config/env");
+const { errorMsg, errorName } = require("../utils/errorMiddlewareMsg");
+
 
 require("dotenv").config();
 
@@ -334,8 +335,7 @@ const userController = {
       if (name) findUser.name = name;
       if (email) findUser.email = email;
       if (photo_url) findUser.photo_url = photo_url;
-      if (nationalIdentityCard)
-        findUser.nationalIdentityCard = nationalIdentityCard;
+      if (nationalIdentityCard) findUser.nationalIdentityCard = nationalIdentityCard;
       if (isKYC) findUser.isKYC = isKYC;
       if (phoneNumber) findUser.phoneNumber = phoneNumber;
 
