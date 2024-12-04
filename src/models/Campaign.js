@@ -27,8 +27,9 @@ const userSchema = new mongoose.Schema(
             minlength: [30, "Deskripsi Wajib Minimal 6 Karakter"],
         },
         statusCampaign: {
-            type: String,
-            enum: ["onGoing", "Verified", "Done"],
+            type: Number, // 0 = On Going, 1 = Verified, 2 = Done
+            enum: [0,1,2],
+            default: 0
         },
         targetAmount: {
             type: Number,

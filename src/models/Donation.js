@@ -31,9 +31,9 @@ const donationSchema = new mongoose.Schema(
             trim: true,
         },
         statusPayment: {
-            type: String,
-            enum: ["Pending", "Complete", "failed"],
-            default: "Pending",
+            type: Number, // 0 = Pending, 1 = Success, 2 = Failed, 3 = Cancel
+            enum: [0,1,2,3],
+            default: 0,
         },
         createdAt: {
             type: Date,
