@@ -1,9 +1,11 @@
 const mongoose = require("mongoose");
-const ResponseAPI = require("../utils/response");
-const { Campaign, Donation } = require("../models");
-const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
 const path = require("path");
 const fs = require("fs");
+
+const ResponseAPI = require("../utils/response");
+const roles = require("../utils/roles");
+const { Campaign, Donation } = require("../models");
+const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
 
 const updateTotalDonation = async (campaignId) => {
   const donations = await Donation.find({ campaignId, deletedAt: null });
@@ -184,6 +186,46 @@ const campaignController = {
       if (endDate) findCampaign.endDate = endDate;
       if (targetAmount) findCampaign.targetAmount = targetAmount;
       if (categoryId) findCampaign.categoryId = categoryId;
+
+      await findCampaign.save();
+
+      ResponseAPI.success(res, findCampaign);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  updateStatusCampaign: async (req, res, next) => {
+    try {
+
+      const status = req.body.statusCampaign;
+
+      const checkCampaign = await Campaign.findOne({
+        _id: req.params._id,
+        deleteAt: null,
+      });
+
+      // Jika Campaign Tidak Ada
+      if (!checkCampaign) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        });
+      }
+
+      const findCampaign = await Campaign.findOne({
+        _id: req.params._id,
+        deleteAt: null,
+      }).select("-password");
+
+      if (req.user.role !== roles.ADMIN) {
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.NOT_HAVE_PERMISSION,
+        });
+      }
+
+      findCampaign.statusCampaign = status;
 
       await findCampaign.save();
 

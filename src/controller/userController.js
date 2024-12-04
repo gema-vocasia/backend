@@ -11,6 +11,7 @@ const ResponseAPI = require("../utils/response");
 const { User, UserVerification, PasswordReset } = require("../models");
 const { jwtSecret, jwtExpiresIn } = require("../config/env");
 const { errorMsg, errorName } = require("../utils/errorMiddlewareMsg");
+const roles = require("../utils/roles");
 
 
 require("dotenv").config();
@@ -34,8 +35,8 @@ transporter.verify((error, success) => {
 });
 
 // Token JWT Generator
-const generateToken = (id) => {
-  return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
+const generateToken = (user) => {
+  return jwt.sign({ id: user._id, role: user.role }, jwtSecret, { expiresIn: jwtExpiresIn });
 };
 
 const userController = {
@@ -49,7 +50,7 @@ const userController = {
       if (!findUser) {
         return next({
           name: errorName.UNAUTHORIZED,
-          message: errorMsg.WRONG_CREDENTIALS,
+          message: errorMsg.USER_NOT_FOUND,
         });
       }
 
@@ -62,7 +63,7 @@ const userController = {
         });
       }
 
-      const token = generateToken(findUser._id);
+      const token = generateToken(findUser);
 
       ResponseAPI.success(res, {
         token,
@@ -331,12 +332,24 @@ const userController = {
 
       const findUser = await User.findById(req.user._id).select("-password");
 
+      if (isKYC){
+        if(req.user.roles === roles.ADMIN) {
+          findUser.isKYC = isKYC;
+        }else{
+          return next({
+            name: errorName.UNAUTHORIZED,
+            message: errorMsg.NOT_HAVE_PERMISSION,
+          });
+        }
+      }
+
       if (req.body.password) findUser.password = password;
       if (name) findUser.name = name;
       if (email) findUser.email = email;
       if (photo_url) findUser.photo_url = photo_url;
       if (nationalIdentityCard) findUser.nationalIdentityCard = nationalIdentityCard;
-      if (isKYC) findUser.isKYC = isKYC;
+
+
       if (phoneNumber) findUser.phoneNumber = phoneNumber;
 
       await findUser.save();
@@ -346,6 +359,45 @@ const userController = {
       next(error);
     }
   },
+
+  // Update isKYC
+  async updateKYC(req, res, next) {
+    try {
+      
+      const checkUser = await User.findOne({
+        _id: req.params._id,
+        deleteAt: null,
+      });
+
+      // Jika User Tidak Ada
+      if (!checkUser) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.USER_NOT_FOUND,
+        });
+      }
+
+      const findUser = await User.findOne({
+        _id: req.params._id,
+        deleteAt: null,
+      }).select("-password");
+
+      if (req.user.role !== roles.ADMIN) {
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.NOT_HAVE_PERMISSION,
+        });
+      }
+
+      findUser.isKYC = true;
+      
+      await findUser.save();
+
+      ResponseAPI.success(res, findUser);
+    } catch (error) {
+      next(error);
+    }
+    },
 
   async Upload(req, res, next) {
     try {

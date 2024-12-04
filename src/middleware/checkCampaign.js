@@ -1,5 +1,6 @@
 const { errorMsg, errorName } = require("../utils/errorMiddlewareMsg");
 const { Campaign } = require("../models");
+const roles = require("../utils/roles");
 
 checkCampaign = async (req, res, next) => {
   try {
@@ -21,9 +22,17 @@ checkCampaign = async (req, res, next) => {
       });
     }
 
+    if(checkCampaign.userId !== req.user._id && req.user.role !== roles.ADMIN) {
+      return next({
+        name: errorName.UNAUTHORIZED,
+        message: errorMsg.NOT_HAVE_PERMISSION,
+      });
+    }
+
     // Jika Campaign Ada Maka Lanjut
     next();
   } catch (error) {
+    
     next(error);
   }
 };

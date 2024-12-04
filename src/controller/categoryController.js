@@ -1,10 +1,11 @@
 const mongoose = require("mongoose");
-const Category = require("../models/Category");
+const { Category } = require("../models");
 const ResponseAPI = require("../utils/response");
 const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
 
+
 const categoryController = {
-  createCategory: async (req, res, next) => {
+  create: async (req, res, next) => {
     try {
       const { title, description } = req.body;
 
@@ -29,12 +30,32 @@ const categoryController = {
         201
       );
     } catch (error) {
-      console.error("Error creating category:", error);
+
       next(error)
     }
   },
 
-  getAllCategories: async (req, res, next) => {
+  readById: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+
+      const category = await Category.findById(id); 
+
+      if (!category) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CATEGORY_NOT_FOUND,
+        })
+      }
+
+      return ResponseAPI.success(res, { category }, "Category retrieved");
+    } catch (error) {
+      console.error("Error fetching category:", error);
+      next(error)
+    }
+  },
+
+  getAll: async (req, res, next) => {
     try {
       const categories = await Category.find({ isDeleted: false });
       return ResponseAPI.success(res, { categories }, "Categories retrieved");
@@ -45,7 +66,36 @@ const categoryController = {
     }
   },
 
-  deleteCategory: async (req, res, next) => {
+  update: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { title, description } = req.body;
+
+      const category = await Category.findByIdAndUpdate(
+        id,
+        { title, description },
+        { new: true }
+      );
+
+      if (!category) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CATEGORY_NOT_FOUND,
+        })
+      }
+
+      return ResponseAPI.success(
+        res,
+        { category },
+        "Category updated successfully"
+      );
+    } catch (error) { 
+
+      next(error)
+    }
+  },
+
+  delete: async (req, res, next) => {
     try {
       const { id } = req.params;
 
@@ -70,7 +120,7 @@ const categoryController = {
 
       
     } catch (error) {
-      console.error("Error deleting category:", error);
+      
       next(error)
     }
   },

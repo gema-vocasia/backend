@@ -14,6 +14,7 @@ const errorMsg = {
   CAMPAIGN_NOT_FOUND: "Campaign Not Found",
   DONATION_NOT_FOUND: "Donation Not Found",
   VERIFICATION_LINK_EXPIRED: "Verification Link invalid Or Expired",
+  NOT_HAVE_PERMISSION: "You Don't Have Permission",
 };
 
 module.exports = { errorName, errorMsg };
