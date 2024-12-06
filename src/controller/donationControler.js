@@ -6,11 +6,14 @@ const { v4: uuidv4 } = require("uuid");
 const snap = require("../config/midtrans");
 const env = require("../config/env");
 const crypto = require("crypto");
+const path = require("path");
+const fs = require("fs");
+const nodemailer = require("nodemailer");
 
 const donationController = {
   async validateSignatureKey(signaturekey, orderId, statusCode, grossAmount) {
     //gabungkan data
-    const data = `${orderId}${statusCode}${grossAmount}${env.MidtransServerKey}`;
+    const data = `${orderId}${statusCode}${grossAmount}${env.midtransServerKey}`;
 
     //hash dengan sha512
     const hash = crypto.createHash("sha512").update(data).digest("hex");
@@ -44,6 +47,7 @@ const donationController = {
         campaignId: campaignId,
         orderNumber,
         snapToken: token,
+        isDone: false,
         snapRedirectUrl: redirect_url,
         amount: amount,
         name: name,
@@ -57,7 +61,44 @@ const donationController = {
     }
   },
 
-  async orderNotification(req, res, next) {
+  async sendDonationNotificationEmail({ email, orderNumber, status }) {
+    try {
+      // Create transporter directly in the method
+      const transporter = nodemailer.createTransport({
+        service: "gmail", // or your email service
+        auth: {
+          user: process.env.AUTH_EMAIL,
+          pass: process.env.AUTH_PASS,
+        },
+      });
+
+      const currentUrl = process.env.APP_URL || "http://localhost:8080";
+      const templatePath = path.join("src", "views", "donation-template.html");
+      const emailTemplate = fs.readFileSync(templatePath, "utf-8");
+
+      const customizedTemplate = emailTemplate
+        .replace("${orderNumber}", orderNumber)
+        .replace("${status}", status)
+        .replace("${currentUrl}", currentUrl);
+
+      const mailOptions = {
+        from: process.env.AUTH_EMAIL,
+        to: email,
+        subject: `Donation ${status}`,
+        html: customizedTemplate,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(
+        `Donation notification sent to ${email} for order ${orderNumber}`
+      );
+    } catch (error) {
+      console.error("Error sending donation notification email:", error);
+      throw new Error("Failed to send donation notification email.");
+    }
+  },
+
+  async donationNotification(req, res, next) {
     try {
       const {
         signature_key,
@@ -67,7 +108,7 @@ const donationController = {
         gross_amount,
       } = req.body;
 
-      const isValid = donationController.validateSignatureKey(
+      const isValid = await donationController.validateSignatureKey(
         signature_key,
         order_id,
         status_code,
@@ -77,48 +118,58 @@ const donationController = {
       if (!isValid) {
         return ResponseAPI.serverError(res, "Invalid signature key");
       }
-      const Order = await Order.findOne({
-        orderNumber: order_id,
-      });
 
-      if (!Order) {
+      const donation = await Donation.findOne({
+        orderNumber: order_id,
+      }).populate("userId");
+
+      if (!donation) {
         return ResponseAPI.error(res, "Order not found", 404);
       }
 
-      if (Order.status == "Success" || Order.status == "Failed") {
+      const userEmail = donation.userId.email;
+
+      if (
+        donation.statusPayment == "Success" ||
+        donation.statusPayment == "Failed"
+      ) {
         return ResponseAPI.success(res);
       }
 
-      //cek action berikutnya
       if (
-        transaction_status == "capture" ||
-        transaction_status == "settlement"
+        transaction_status === "capture" ||
+        transaction_status === "settlement"
       ) {
-        //kurang transaction
-        Order.status = "Success";
-        await Order.save();
-        await Donation.create({
-          userId: Order.userId,
-          isDone: true,
-          campaignId: Order.campaignId,
-          comment: Order.comment,
+        donation.statusPayment = "Success";
+        donation.isDone = true;
+
+        // Send success notification email
+        await donationController.sendDonationNotificationEmail({
+          email: userEmail,
+          orderNumber: order_id,
+          status: "Success",
+        });
+      }
+      if (
+        transaction_status === "cancel" ||
+        transaction_status === "deny" ||
+        transaction_status === "expire"
+      ) {
+        donation.statusPayment = "Failed";
+
+        await donationController.sendDonationNotificationEmail({
+          email: userEmail,
+          orderNumber: order_id,
+          status: "Failed",
         });
       }
 
-      if (
-        transaction_status == "cancel" ||
-        transaction_status == "deny" ||
-        transaction_status == "expire"
-      ) {
-        // TODO set transaction status on your database to 'failure'
-        // and response with 200 OK
-        Order.status = "Failed";
-        await Order.save();
-      }
+      await donation.save();
 
+      // Kembalikan response sukses
       return ResponseAPI.success(res);
     } catch (error) {
-      next(error);
+      next(error); // Tangani error dengan middleware
     }
   },
 
@@ -148,7 +199,6 @@ const donationController = {
     try {
       const userId = req.user._id;
 
-      // Mencari semua donasi berdasarkan userId dan memastikan donasi aktif (deletedAt: null)
       const findDonationsByUser = await Donation.find({
         userId: userId,
         deletedAt: null,

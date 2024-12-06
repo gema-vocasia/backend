@@ -8,6 +8,6 @@ module.exports = {
   mongodbUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN,
-  MidtransServerKey: process.env.MIDTRANS_SERVER_KEY,
+  midtransServerKey: process.env.MIDTRANS_SERVER_KEY,
   NgrokClient: process.env.NGROK_AUTH_TOKEN,
 };
