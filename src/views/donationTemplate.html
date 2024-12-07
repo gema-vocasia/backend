@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        background-color: #f9f9f9;
+      }
+      .container {
+        width: 80%;
+        max-width: 600px;
+        margin: 20px auto;
+        background: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #ddd;
+      }
+      .header h1 {
+        color: #0066cc;
+      }
+      .content {
+        padding: 20px 0;
+      }
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        color: #999;
+        margin-top: 20px;
+        border-top: 1px solid #ddd;
+        padding-top: 10px;
+      }
+      .button {
+        display: inline-block;
+        background-color: #5e84c5;
+        font-weight: bold;
+        text-align: center;
+        text-decoration: none;
+
+        color: #ffffff;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        margin-top: 10px;
+      }
+      .button:hover {
+        background-color: #05265f;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Terima Kasih atas Donasi Anda!</h1>
+      </div>
+      <div class="content">
+        <p>Halo ${name},</p>
+        <p>
+          Terima kasih telah berdonasi untuk mendukung program kami. Berikut
+          adalah detail transaksi Anda:
+        </p>
+        <ul>
+          <li><strong>Nomor Pesanan:</strong> ${orderNumber}</li>
+          <li><strong>Status:</strong> ${status}</li>
+          <li><strong>Jumlah Donasi:</strong> ${amount}</li>
+        </ul>
+        <p>Anda dapat melihat detail lebih lanjut melalui tautan berikut:</p>
+        <p>
+          <a class="button" href="${currentUrl}/donations/${orderNumber}"
+            >Lihat Detail Donasi</a
+          >
+        </p>
+        <p>
+          Semoga donasi Anda memberikan manfaat yang besar bagi mereka yang
+          membutuhkan.
+        </p>
+      </div>
+      <div class="footer">
+        <p>&copy; 2024 Organisasi Amal. GEMA.</p>
+      </div>
+    </div>
+  </body>
+</html>

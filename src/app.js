@@ -25,16 +25,16 @@ app.use("/api/v1", routes);
 app.listen(port, async () => {
   console.log(`Server is running on port ${port}`);
 
-  try {
-    // Autentikasi menggunakan auth token Ngrok
-    if (NgrokClient) {
-      await ngrok.authtoken(NgrokClient);
-    }
+  // try {
+  //   // Autentikasi menggunakan auth token Ngrok
+  //   if (NgrokClient) {
+  //     await ngrok.authtoken(NgrokClient);
+  //   }
 
-    // Buat URL publik dengan Ngrok
-    const url = await ngrok.connect(port);
-    console.log(`Ngrok is running at: ${url}`);
-  } catch (err) {
-    console.error("Failed to connect Ngrok:", err);
-  }
+  //   // Buat URL publik dengan Ngrok
+  //   const url = await ngrok.connect(port);
+  //   console.log(`Ngrok is running at: ${url}`);
+  // } catch (err) {
+  //   console.error("Failed to connect Ngrok:", err);
+  // }
 });

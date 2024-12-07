@@ -6,6 +6,4 @@ let snap = new midtransClient.Snap({
   serverKey: midtransServerKey,
 });
 
-console.log("Midtrans Server Key:", midtransServerKey);
-
 module.exports = snap;

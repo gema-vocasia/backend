@@ -63,24 +63,47 @@ const donationController = {
 
   async sendDonationNotificationEmail({ email, orderNumber, status }) {
     try {
-      // Create transporter directly in the method
+      // Buat transporter untuk pengiriman email
       const transporter = nodemailer.createTransport({
-        service: "gmail", // or your email service
+        service: "gmail",
         auth: {
           user: process.env.AUTH_EMAIL,
           pass: process.env.AUTH_PASS,
         },
       });
 
+      // URL aplikasi
       const currentUrl = process.env.APP_URL || "http://localhost:8080";
-      const templatePath = path.join("src", "views", "donation-template.html");
+
+      // Baca template email dari file
+      const templatePath = path.join("src", "views", "donationTemplate.html");
       const emailTemplate = fs.readFileSync(templatePath, "utf-8");
 
+      // Cari data donasi dan populate data user
+      const donation = await Donation.findOne({
+        orderNumber: orderNumber,
+      }).populate("userId");
+
+      // Validasi data donasi
+      if (!donation) {
+        throw new Error("Donasi tidak ditemukan dengan nomor pesanan ini.");
+      }
+      if (!donation.userId) {
+        throw new Error("Pengguna tidak ditemukan untuk donasi ini.");
+      }
+
+      const username = donation.userId.name; // Nama user
+      const amount = donation.amount; // Jumlah donasi
+
+      // Kustomisasi template
       const customizedTemplate = emailTemplate
         .replace("${orderNumber}", orderNumber)
         .replace("${status}", status)
+        .replace("${amount}", amount)
+        .replace("${name}", username)
         .replace("${currentUrl}", currentUrl);
 
+      // Konfigurasi email
       const mailOptions = {
         from: process.env.AUTH_EMAIL,
         to: email,
@@ -88,6 +111,7 @@ const donationController = {
         html: customizedTemplate,
       };
 
+      // Kirim email
       await transporter.sendMail(mailOptions);
       console.log(
         `Donation notification sent to ${email} for order ${orderNumber}`
