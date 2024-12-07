@@ -17,75 +17,106 @@
         background: #ffffff;
         border: 1px solid #ddd;
         border-radius: 8px;
-        padding: 20px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       .header {
         text-align: center;
+        padding-top: 20px;
         padding-bottom: 20px;
         border-bottom: 1px solid #ddd;
+        background-color: #5e84c5;
+        border-radius: 8px 8px 0 0;
       }
-      .header h1 {
-        color: #0066cc;
+      .header h2 {
+        color: white;
+        margin: 0;
       }
       .content {
-        padding: 20px 0;
+        padding: 20px 20px;
+        text-align: justify;
       }
       .footer {
         text-align: center;
         font-size: 12px;
-        color: #999;
-        margin-top: 20px;
-        border-top: 1px solid #ddd;
-        padding-top: 10px;
+        color: #ffffff;
+        padding:20px 0px;
+        background-color: #5e84c5;
+        border-radius: 0 0 8px 8px;
       }
+
+      .footer p {
+        margin: 0;
+        font-size: 15px;
+      }
+
       .button {
         display: inline-block;
         background-color: #5e84c5;
         font-weight: bold;
         text-align: center;
         text-decoration: none;
-
         color: #ffffff;
         padding: 10px 20px;
         text-decoration: none;
         border-radius: 5px;
         margin-top: 10px;
+        margin: 0 auto;
       }
+
+      .button-container {
+        text-align: center;
+      }
+
       .button:hover {
-        background-color: #05265f;
+        background-color: #3867b8;
       }
+
+      .description {
+        text-align: justify;
+        margin:0%
+      }
+
+      ul {
+        padding: 0;
+        margin: 0;
+      }
+
+      ul li {
+        list-style: none;
+        margin-bottom: 10px;
+      }
+
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
-        <h1>Terima Kasih atas Donasi Anda!</h1>
+        <h2>Terima Kasih atas Donasi Anda!</h2>
       </div>
       <div class="content">
-        <p>Halo ${name},</p>
+        <p>Halo ${name}</p>
         <p>
           Terima kasih telah berdonasi untuk mendukung program kami. Berikut
           adalah detail transaksi Anda:
         </p>
         <ul>
-          <li><strong>Nomor Pesanan:</strong> ${orderNumber}</li>
-          <li><strong>Status:</strong> ${status}</li>
-          <li><strong>Jumlah Donasi:</strong> ${amount}</li>
+          <li><strong>Nomor Pesanan </strong><br> ${orderNumber}</li>
+          <li><strong>Status</strong><br> ${status}</li>
+          <li><strong>Jumlah Donasi</strong><br> ${amount}</li>
         </ul>
         <p>Anda dapat melihat detail lebih lanjut melalui tautan berikut:</p>
-        <p>
+        <p class="button-container">
           <a class="button" href="${currentUrl}/donations/${orderNumber}"
             >Lihat Detail Donasi</a
           >
         </p>
-        <p>
+        <p class="description">
           Semoga donasi Anda memberikan manfaat yang besar bagi mereka yang
           membutuhkan.
         </p>
       </div>
       <div class="footer">
-        <p>&copy; 2024 Organisasi Amal. GEMA.</p>
+        <p class="copyright">&copy; 2024 Organisasi Amal. GEMA.</p>
       </div>
     </div>
   </body>
