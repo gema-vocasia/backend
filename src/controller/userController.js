@@ -6,12 +6,10 @@ const { v4: uuidv4 } = require("uuid");
 const fs = require("fs");
 const { reset } = require("nodemon");
 
-
 const ResponseAPI = require("../utils/response");
 const { User, UserVerification, PasswordReset } = require("../models");
 const { jwtSecret, jwtExpiresIn } = require("../config/env");
 const { errorMsg, errorName } = require("../utils/errorMiddlewareMsg");
-
 
 require("dotenv").config();
 
@@ -211,11 +209,11 @@ const userController = {
         return res.status(404).json({ error: "User not found" });
       }
 
+      // Hapus reset record lama
+      await PasswordReset.deleteMany({ userId: user._id });
+
       const resetString = uuidv4();
       const hashedResetString = await bcrypt.hash(resetString, 12);
-
-      console.log("Reset string yang dibuat:", resetString);
-      console.log("Reset string yang di-hash:", hashedResetString);
 
       await PasswordReset.create({
         userId: user._id,
@@ -228,18 +226,16 @@ const userController = {
         from: process.env.AUTH_EMAIL,
         to: email,
         subject: "Password Reset Request",
-        html: `<p>Click the link below to reset your password:</p>
-             <a href="${redirectUrl}?resetString=${resetString}">Reset Password</a>`,
+        html: `<p>Klik link di bawah untuk mereset password:</p>
+           <a href="${redirectUrl}?resetString=${resetString}&email=${email}">Reset Password</a>
+           <p>Link ini akan kedaluwarsa dalam 1 jam.</p>`,
       };
 
-      console.log(
-        "Reset URL dikirim:",
-        `${redirectUrl}?resetString=${resetString}`
-      );
       await transporter.sendMail(mailOptions);
-      res
-        .status(200)
-        .json({ message: "Password reset email sent successfully" });
+      res.status(200).json({
+        message: "Password reset email sent successfully",
+        resetString, // Opsional: untuk debugging
+      });
     } catch (error) {
       console.error("Error in requestResetPassword:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -248,53 +244,59 @@ const userController = {
 
   async verifyAndResetPassword(req, res) {
     const { email, resetString, newPassword } = req.body;
+
+    console.log("Debug - Received Data:", {
+      email,
+      resetString,
+      resetStringLength: resetString.length,
+    });
+
     if (!email || !resetString || !newPassword) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     try {
-      // Cari user berdasarkan email
       const user = await User.findOne({ email });
-      if (!user) return res.status(404).json({ error: "User not found" });
-
-      // Cari record reset password terkait user
-      const resetRecord = await PasswordReset.findOne({ userId: user._id });
-      if (!resetRecord)
-        return res.status(404).json({ error: "No reset record" });
-
-      // Dapatkan data resetString dan expiredAt
-      const { expiresAt, resetString: hashedResetString } = resetRecord;
-
-      // Cek apakah resetString sudah expired
-      if (Date.now() > expiresAt) {
-        await PasswordReset.deleteOne({ userId: user._id });
-        return res.status(400).json({ error: "Reset expired" });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
       }
 
-      // Bandingkan reset string dari request dengan yang ada di database
-      const isMatch = await bcrypt.compare(resetString, hashedResetString);
-      if (!isMatch)
-        return res.status(400).json({ error: "Invalid reset string" });
+      const resetRecord = await PasswordReset.findOne({
+        userId: user._id,
+        expiresAt: { $gt: Date.now() }, // Pastikan belum expire
+      });
 
-      // Hash password baru
+      if (!resetRecord) {
+        return res.status(404).json({ error: "No valid reset record found" });
+      }
+
+      // Verifikasi reset string
+      const isMatch = await bcrypt.compare(
+        resetString,
+        resetRecord.resetString
+      );
+
+      if (!isMatch) {
+        return res.status(400).json({ error: "Invalid reset string" });
+      }
+
       const hashedNewPassword = await bcrypt.hash(newPassword, 12);
 
-      // Update password user
+      // Update password
       await User.updateOne(
         { _id: user._id },
         { $set: { password: hashedNewPassword } }
       );
 
-      // Hapus semua record reset password terkait user
-      await PasswordReset.deleteMany({ userId: user._id });
+      // Hapus reset record
+      await PasswordReset.deleteOne({ _id: resetRecord._id });
 
       res.status(200).json({ message: "Password updated successfully" });
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Complete Error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   },
-
   // **Get Profile**
   async getProfile(req, res) {
     try {
@@ -335,7 +337,8 @@ const userController = {
       if (name) findUser.name = name;
       if (email) findUser.email = email;
       if (photo_url) findUser.photo_url = photo_url;
-      if (nationalIdentityCard) findUser.nationalIdentityCard = nationalIdentityCard;
+      if (nationalIdentityCard)
+        findUser.nationalIdentityCard = nationalIdentityCard;
       if (isKYC) findUser.isKYC = isKYC;
       if (phoneNumber) findUser.phoneNumber = phoneNumber;
 
@@ -398,7 +401,6 @@ const userController = {
       next(error);
     }
   },
-
 };
 
 module.exports = userController;
