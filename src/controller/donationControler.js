@@ -22,7 +22,8 @@ const donationController = {
   // Create Donation
   async Create(req, res, next) {
     try {
-      const { campaignId, amount, name, comment } = req.body;
+      const { amount, name, comment } = req.body;
+      const { _id: campaignId } = req.params;
       const PRICE = amount || 10000;
       const orderNumber = `TRX-${uuidv4()}`;
 
