@@ -115,7 +115,10 @@ const campaignController = {
   // Read All Campaign
   async Read(req, res, next) {
     try {
-      const findCampaign = await Campaign.find({ deletedAt: null }); // Hanya campaign aktif
+      const findCampaign = await Campaign.find({ deletedAt: null }).populate(
+        "categoryId",
+        "title"
+      );
 
       // Update total donation untuk semua campaign yang ditemukan
       await updateAllCampaignDonations(findCampaign);

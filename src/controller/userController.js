@@ -51,6 +51,13 @@ const userController = {
         });
       }
 
+      if (!findUser.verified) {
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.NOT_VERIFIED,
+        });
+      }
+
       const isPasswordValid = await findUser.comparePassword(password);
 
       if (!isPasswordValid) {
@@ -72,6 +79,7 @@ const userController = {
           nationalIdentityCard: findUser.nationalIdentityCard,
           phoneNumber: findUser.phoneNumber,
           isKYC: findUser.isKYC,
+          verified: findUser.verified,
         },
       });
     } catch (error) {
@@ -99,7 +107,7 @@ const userController = {
         password,
         phoneNumber,
         joinAt: new Date(),
-        verified: false, // Status diverifikasi awal
+        verified: false,
         phoneNumber,
       });
 
