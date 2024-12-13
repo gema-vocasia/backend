@@ -409,6 +409,19 @@ const userController = {
       next(error);
     }
   },
+
+  async updateKYC(req, res, next) {
+    try {
+      if(req.user.role !== "ADMIN") return next({name: errorName.UNAUTHORIZED, message: errorMsg.UNAUTHORIZED});
+      
+      const user = await User.findById(req.params._id).select("-password");
+      user.isKYC = true;
+      await user.save();
+      ResponseAPI.success(res, user);
+    } catch (error) {
+      next(error);
+     }
+  },
 };
 
 module.exports = userController;
