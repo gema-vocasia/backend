@@ -2,14 +2,14 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const path = require("path");
 const bcrypt = require("bcrypt");
-const { v4: uuidv4 } = require("uuid");
+const {v4: uuidv4} = require("uuid");
 const fs = require("fs");
-const { reset } = require("nodemon");
+const {reset} = require("nodemon");
 
 const ResponseAPI = require("../utils/response");
-const { User, UserVerification, PasswordReset } = require("../models");
-const { jwtSecret, jwtExpiresIn } = require("../config/env");
-const { errorMsg, errorName } = require("../utils/errorMiddlewareMsg");
+const {User, UserVerification, PasswordReset} = require("../models");
+const {jwtSecret, jwtExpiresIn} = require("../config/env");
+const {errorMsg, errorName} = require("../utils/errorMiddlewareMsg");
 
 require("dotenv").config();
 
@@ -33,16 +33,16 @@ transporter.verify((error, success) => {
 
 // Token JWT Generator
 const generateToken = (id) => {
-  return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
+  return jwt.sign({id}, jwtSecret, {expiresIn: jwtExpiresIn});
 };
 
 const userController = {
   // Login User
   async login(req, res, next) {
     try {
-      const { email, password } = req.body;
+      const {email, password} = req.body;
 
-      const findUser = await User.findOne({ email });
+      const findUser = await User.findOne({email});
 
       if (!findUser) {
         return next({
@@ -90,9 +90,9 @@ const userController = {
   // **Register User**
   async register(req, res, next) {
     try {
-      const { name, email, password, phoneNumber } = req.body;
+      const {name, email, password, phoneNumber} = req.body;
 
-      const findUser = await User.findOne({ email });
+      const findUser = await User.findOne({email});
 
       if (findUser) {
         return next({
@@ -127,7 +127,7 @@ const userController = {
     }
   },
 
-  async sendVerificationEmail({ _id, email }) {
+  async sendVerificationEmail({_id, email}) {
     try {
       const currentUrl = "http://localhost:8080/api/v1/user";
       const uniqueString = uuidv4();
@@ -162,11 +162,11 @@ const userController = {
     }
   },
 
-  async verifyEmail(req, res) {
-    const { uniqueString } = req.params;
+  async verifyEmail(req, res, next) {
+    const {uniqueString} = req.params;
 
     try {
-      const record = await UserVerification.findOne({ uniqueString });
+      const record = await UserVerification.findOne({uniqueString});
 
       if (!record) {
         return next({
@@ -175,11 +175,11 @@ const userController = {
         });
       }
 
-      const { expiresAt, userId } = record;
+      const {expiresAt, userId} = record;
 
       // Periksa apakah tautan sudah kadaluarsa
       if (Date.now() > expiresAt) {
-        await UserVerification.deleteOne({ userId }); // Hapus record lama
+        await UserVerification.deleteOne({userId}); // Hapus record lama
         return res.status(400).json({
           message:
             "Verification link expired. Please request a new verification email.",
@@ -187,8 +187,8 @@ const userController = {
       }
       const verifed = path.join(__dirname, "..", "views", "verified.html");
       // Update status pengguna menjadi "verified"
-      await User.findByIdAndUpdate(userId, { verified: true });
-      await UserVerification.deleteOne({ userId });
+      await User.findByIdAndUpdate(userId, {verified: true});
+      await UserVerification.deleteOne({userId});
       res.status(200).sendFile(verifed);
       // res.status(200).json({ message: "Email verified successfully." });
     } catch (error) {
@@ -203,22 +203,22 @@ const userController = {
   },
 
   async requestResetPassword(req, res) {
-    const { email, redirectUrl } = req.body;
+    const {email, redirectUrl} = req.body;
 
     if (!email || !redirectUrl) {
       return res
         .status(400)
-        .json({ error: "Email and redirectUrl are required" });
+        .json({error: "Email and redirectUrl are required"});
     }
 
     try {
-      const user = await User.findOne({ email });
+      const user = await User.findOne({email});
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({error: "User not found"});
       }
 
       // Hapus reset record lama
-      await PasswordReset.deleteMany({ userId: user._id });
+      await PasswordReset.deleteMany({userId: user._id});
 
       const resetString = uuidv4();
       const hashedResetString = await bcrypt.hash(resetString, 12);
@@ -246,12 +246,12 @@ const userController = {
       });
     } catch (error) {
       console.error("Error in requestResetPassword:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({error: "Internal server error"});
     }
   },
 
   async verifyAndResetPassword(req, res) {
-    const { email, resetString, newPassword } = req.body;
+    const {email, resetString, newPassword} = req.body;
 
     console.log("Debug - Received Data:", {
       email,
@@ -260,22 +260,22 @@ const userController = {
     });
 
     if (!email || !resetString || !newPassword) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({error: "Missing required fields"});
     }
 
     try {
-      const user = await User.findOne({ email });
+      const user = await User.findOne({email});
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({error: "User not found"});
       }
 
       const resetRecord = await PasswordReset.findOne({
         userId: user._id,
-        expiresAt: { $gt: Date.now() }, // Pastikan belum expire
+        expiresAt: {$gt: Date.now()}, // Pastikan belum expire
       });
 
       if (!resetRecord) {
-        return res.status(404).json({ error: "No valid reset record found" });
+        return res.status(404).json({error: "No valid reset record found"});
       }
 
       // Verifikasi reset string
@@ -285,24 +285,24 @@ const userController = {
       );
 
       if (!isMatch) {
-        return res.status(400).json({ error: "Invalid reset string" });
+        return res.status(400).json({error: "Invalid reset string"});
       }
 
       const hashedNewPassword = await bcrypt.hash(newPassword, 12);
 
       // Update password
       await User.updateOne(
-        { _id: user._id },
-        { $set: { password: hashedNewPassword } }
+        {_id: user._id},
+        {$set: {password: hashedNewPassword}}
       );
 
       // Hapus reset record
-      await PasswordReset.deleteOne({ _id: resetRecord._id });
+      await PasswordReset.deleteOne({_id: resetRecord._id});
 
-      res.status(200).json({ message: "Password updated successfully" });
+      res.status(200).json({message: "Password updated successfully"});
     } catch (error) {
       console.error("Complete Error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({error: "Internal server error"});
     }
   },
   // **Get Profile**
@@ -328,27 +328,43 @@ const userController = {
 
   // Update User
   async updateProfile(req, res, next) {
+
     try {
       const {
         name,
         email,
         phoneNumber,
-        photo_url,
         nationalIdentityCard,
         isKYC,
         password,
       } = req.body;
-
       const findUser = await User.findById(req.user._id).select("-password");
+      const oldFilePath = path.join(
+        __dirname,
+        "..",
+        "..",
+        "public",
+        "upload",
+        findUser.photo_url
+      );
 
       if (req.body.password) findUser.password = password;
       if (name) findUser.name = name;
       if (email) findUser.email = email;
-      if (photo_url) findUser.photo_url = photo_url;
       if (nationalIdentityCard)
         findUser.nationalIdentityCard = nationalIdentityCard;
       if (isKYC) findUser.isKYC = isKYC;
       if (phoneNumber) findUser.phoneNumber = phoneNumber;
+      if (req.file?.filename) {
+        findUser.photo_url = req.file.filename
+        fs.unlink(oldFilePath, (err) => {
+          if (err) console.log(err);
+          else {
+            console.log(`\nDeleted file: ${oldFilePath.photo}`);
+          }
+        });
+      }
+
 
       await findUser.save();
 
@@ -386,12 +402,11 @@ const userController = {
           }
         });
       }
-
       // Update User dengan foto baru
       const updatedUser = await User.findOneAndUpdate(
-        { _id: req.user._id, deleteAt: null },
-        { nationalIdentityCard: req.file.filename, updateAt: new Date() },
-        { new: true }
+        {_id: req.user._id, deleteAt: null},
+        {nationalIdentityCard: req.file.filename, updateAt: new Date()},
+        {new: true}
       );
 
       if (!updatedUser) {
