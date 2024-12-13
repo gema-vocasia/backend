@@ -20,7 +20,7 @@ const donationSchema = new mongoose.Schema(
     },
     campaignId: {
       type: mongoose.Types.ObjectId,
-      ref: "campaign",
+      ref: "Campaign",
       required: true,
     },
     amount: {

@@ -10,10 +10,19 @@ const updateTotalDonation = async (campaignId) => {
 
   let totalDonation = 0;
   donations.forEach((donation) => {
-    totalDonation += donation.amount;
+    if (donation.isDone === true) {
+      totalDonation += donation.amount;
+    }
   });
 
   await Campaign.findOneAndUpdate({ _id: campaignId }, { totalDonation });
+};
+
+const updateAllCampaignDonations = async (campaigns) => {
+  const updatePromises = campaigns.map((campaign) =>
+    updateTotalDonation(campaign._id)
+  );
+  await Promise.all(updatePromises);
 };
 
 const campaignController = {
@@ -61,13 +70,8 @@ const campaignController = {
         deletedAt: null,
       });
 
-      const updateAllDonation = async () => {
-        findCampaignsByUser.forEach((campaign) => {
-          updateTotalDonation(campaign._id);
-        });
-      };
-
-      await updateAllDonation();
+      // Update total donation untuk semua campaign yang ditemukan
+      await updateAllCampaignDonations(findCampaignsByUser);
 
       if (findCampaignsByUser.length === 0) {
         return next({
@@ -85,12 +89,15 @@ const campaignController = {
   // Read Campaign by ID
   async ReadById(req, res, next) {
     try {
+      const campaignId = req.params._id;
+
+      // Update total donation untuk campaign yang diminta
+      await updateTotalDonation(campaignId);
+
       const findCampaign = await Campaign.findOne({
-        _id: req.params._id,
+        _id: campaignId,
         deletedAt: null,
       }).populate("userId", "name");
-
-      updateTotalDonation(req.params._id);
 
       if (!findCampaign) {
         return next({
@@ -109,6 +116,9 @@ const campaignController = {
   async Read(req, res, next) {
     try {
       const findCampaign = await Campaign.find({ deletedAt: null }); // Hanya campaign aktif
+
+      // Update total donation untuk semua campaign yang ditemukan
+      await updateAllCampaignDonations(findCampaign);
 
       if (findCampaign.length === 0) {
         return next({

@@ -191,10 +191,9 @@ const donationController = {
 
       await donation.save();
 
-      // Kembalikan response sukses
       return ResponseAPI.success(res);
     } catch (error) {
-      next(error); // Tangani error dengan middleware
+      next(error);
     }
   },
 
@@ -227,7 +226,9 @@ const donationController = {
       const findDonationsByUser = await Donation.find({
         userId: userId,
         deletedAt: null,
-      });
+      })
+        .populate("userId", "name")
+        .populate("campaignId", "title photo");
 
       if (findDonationsByUser.length === 0) {
         return next({
