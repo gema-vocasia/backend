@@ -249,7 +249,7 @@ const donationController = {
       const findDonation = await Donation.find({
         campaignId: req.params._id,
         deletedAt: null,
-      });
+      }).populate("userId", "name photo_url");
 
       console.log(req.params._id);
       if (findDonation.length === 0) {
