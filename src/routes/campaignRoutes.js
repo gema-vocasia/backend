@@ -10,6 +10,16 @@ router.get("/campaign/:_id", campaignController.ReadById);
 router.get("/campaigns/user", auth, campaignController.ReadByUserId);
 router.put("/campaign/:_id", auth, checkCategory, campaignController.Update);
 router.delete("/campaign/:_id", auth, campaignController.Delete);
-router.post("/campaign/upload/:_id", auth, upload.single("photo"), campaignController.Upload);
+router.post(
+  "/campaign/upload/:_id",
+  auth,
+  upload.single("photo"),
+  campaignController.Upload
+);
+router.patch(
+  "/campaign/:id/status/:newStatus",
+  auth,
+  campaignController.updateStatus
+);
 
 module.exports = router;
