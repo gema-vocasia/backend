@@ -17,9 +17,15 @@ router.post(
   campaignController.Upload
 );
 router.patch(
-  "/campaign/:id/status/:newStatus",
+  "/campaign/:id/statusCampaign/:newStatus",
   auth,
-  campaignController.updateStatus
+  campaignController.updateStatusCampaign
+);
+
+router.patch(
+  "/campaign/:id/statusTransfer/:newStatus",
+  auth,
+  campaignController.updateStatusTransfer
 );
 
 module.exports = router;
