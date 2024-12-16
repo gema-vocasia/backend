@@ -169,6 +169,7 @@ const campaignController = {
 
       // Update total donation untuk semua campaign yang ditemukan
       await updateAllCampaignDonations(findCampaign);
+      
 
       if (findCampaign.length === 0) {
         return next({
@@ -303,7 +304,7 @@ const campaignController = {
 
   async updateStatusCampaign(req, res, next) {
     try {
-      const { id, newStatus } = req.params;
+      const { _id, newStatus } = req.params;
 
       if (req.user.role !== ROLES.ADMIN) {
         return ResponseAPI.forbidden(
@@ -313,7 +314,7 @@ const campaignController = {
       }
 
       const findCampaign = await Campaign.findOne({
-        _id: id,
+        _id: _id,
         deletedAt: null,
       });
 
@@ -343,10 +344,12 @@ const campaignController = {
 
   async updateStatusTransfer(req, res, next) {
     try {
-      const { id, newStatus } = req.params;
+      const { _id, newStatus } = req.params; // Ambil `newStatus` dari URL
+      console.log(newStatus); // Cek apakah status sudah benar
 
+      // Temukan campaign berdasarkan ID
       const findCampaign = await Campaign.findOne({
-        _id: id,
+        _id: _id,
         deletedAt: null,
       });
 
@@ -357,18 +360,44 @@ const campaignController = {
         });
       }
 
-      if (!["On Request", "On Progress", "Success"].includes(newStatus)) {
-        return next({
-          name: errorName.VALIDATION_ERROR,
-          message: errorMsg.INVALID_CAMPAIGN_STATUS,
-        });
+      // Cek peran user
+      if (req.user.role === ROLES.USER) {
+        // User hanya bisa mengubah status ke "On Progress"
+        if (newStatus !== "On Progress") {
+          return ResponseAPI.forbidden(
+            res,
+            "Anda hanya dapat mengubah status menjadi On Progress."
+          );
+        }
+
+        // Ubah status ke "On Progress"
+        findCampaign.statusTransfer = "On Progress";
+        await findCampaign.save();
+
+        return ResponseAPI.success(res, findCampaign);
       }
 
-      // Update status
-      findCampaign.statusTransfer = newStatus;
-      await findCampaign.save();
+      // Cek peran admin
+      if (req.user.role === ROLES.ADMIN) {
+        // Admin bebas mengubah status ke nilai valid lainnya
+        if (!["On Request", "On Progress", "Success"].includes(newStatus)) {
+          return next({
+            name: errorName.VALIDATION_ERROR,
+            message: errorMsg.INVALID_CAMPAIGN_STATUS,
+          });
+        }
 
-      ResponseAPI.success(res, findCampaign);
+        findCampaign.statusTransfer = newStatus;
+        await findCampaign.save();
+
+        return ResponseAPI.success(res, findCampaign);
+      }
+
+      // Jika bukan admin atau user yang valid
+      return ResponseAPI.forbidden(
+        res,
+        "Anda tidak memiliki akses untuk mengubah status."
+      );
     } catch (error) {
       next(error);
     }
