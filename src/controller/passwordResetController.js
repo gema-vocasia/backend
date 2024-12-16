@@ -36,11 +36,14 @@ const PasswordResetController = {
 
   resetPassword: async (req, res) => {
     try {
-      const { token, password } = req.body;
-      console.log("Reset password request received:", { token, password });
+      const { resetString, password } = req.body;
+      console.log("Reset password request received:", {
+        resetString,
+        password,
+      });
 
       // Cari token di database
-      const passwordReset = await PasswordReset.findOne({ token });
+      const passwordReset = await PasswordReset.findOne({ resetString });
       console.log("Password reset entry found:", passwordReset);
 
       if (!passwordReset) {
@@ -63,8 +66,8 @@ const PasswordResetController = {
       console.log("Password updated for user:", user._id);
 
       // Hapus token yang sudah digunakan
-      await PasswordReset.deleteOne({ token });
-      console.log("Password reset token deleted:", token);
+      await PasswordReset.deleteOne({ resetString });
+      console.log("Password reset token deleted:", resetString);
 
       ResponseAPI.success(res, "password updated successfully");
     } catch (error) {
