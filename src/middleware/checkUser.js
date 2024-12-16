@@ -17,9 +17,7 @@ checkUser = async (req, res, next) => {
     if (checkUser.isKYC === false) {
       return next({
         name: "KYC_ERROR",
-        message:
-          errorMsg.KYC_NOT_FOUND ||
-          "Verifikasi KTP diperlukan sebelum melanjutkan",
+        message: errorMsg.KYC_NOT_FOUND,
       });
     }
     // Jika User Ada Maka Lanjut

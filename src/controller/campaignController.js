@@ -41,7 +41,7 @@ const campaignController = {
 
       const userId = req.user._id;
 
-      if (!user || user.isKYC !== true) {
+      if (!req.user || req.user.isKYC !== true) {
         return next({
           name: "KYC_ERROR",
           message: "Verifikasi KTP diperlukan sebelum membuat kampanye",

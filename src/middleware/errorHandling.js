@@ -58,7 +58,7 @@ exports.errorHandling = (err, req, res, next) => {
   if (err?.name === errorName.KYC_ERROR) {
     return res.status(400).json({
       success: false,
-      name: errorName.KYC_ERROR,
+      name: errorName.NOT_FOUND,
       message:
         err?.message ?? "Verifikasi KTP diperlukan sebelum membuat kampanye",
     });
