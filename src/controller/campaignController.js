@@ -32,7 +32,6 @@ const campaignController = {
       const {
         title,
         description,
-        photo,
         startDate,
         endDate,
         targetAmount,
@@ -48,18 +47,55 @@ const campaignController = {
         });
       }
 
-      // Membuat campaign baru
+      // Pastikan file foto ada
+      if (!req.file) {
+        return next({
+          name: "ValidationError",
+          message: "Foto kampanye diperlukan",
+        });
+      }
+
+      // Jika campaign ada dan sudah punya foto, hapus file lama
+      if (req.params._id) {
+        const checkOldFile = await Campaign.findOne({
+          _id: req.params._id,
+          deleteAt: null,
+        });
+
+        if (checkOldFile && checkOldFile.photo) {
+          const oldFilePath = path.join(
+            __dirname,
+            "..",
+            "..",
+            "public",
+            "upload",
+            checkOldFile.photo
+          );
+          console.log("Path yang dibentuk:", oldFilePath);
+
+          // Menghapus file lama
+          fs.unlink(oldFilePath, (err) => {
+            if (err) console.log(err);
+            else {
+              console.log("\nDeleted file:", checkOldFile.photo);
+            }
+          });
+        }
+      }
+
+      // Membuat campaign baru dengan foto yang baru di-upload
       const newCampaign = await Campaign.create({
         userId,
         categoryId,
         title,
         description,
-        photo,
+        photo: req.file.filename, // Menyimpan nama file foto yang di-upload
         startDate,
         endDate,
         targetAmount,
       });
 
+      // Mengirim response sukses dengan data campaign yang baru dibuat
       ResponseAPI.success(res, newCampaign);
     } catch (error) {
       next(error);
@@ -75,7 +111,9 @@ const campaignController = {
       const findCampaignsByUser = await Campaign.find({
         userId: userId,
         deletedAt: null,
-      });
+      })
+        .populate("userId", "name")
+        .populate("categoryId", "title");
 
       // Update total donation untuk semua campaign yang ditemukan
       await updateAllCampaignDonations(findCampaignsByUser);
@@ -122,7 +160,10 @@ const campaignController = {
   // Read All Campaign
   async Read(req, res, next) {
     try {
-      const findCampaign = await Campaign.find({ deletedAt: null })
+      const findCampaign = await Campaign.find({
+        deletedAt: null,
+        statusCampaign: "On Going",
+      })
         .populate("userId", "name")
         .populate("categoryId", "title"); // Hanya campaign aktif
 
@@ -244,6 +285,28 @@ const campaignController = {
       const findCampaign = await Campaign.findOneAndUpdate(
         { _id: req.params._id, deletedAt: null },
         { deletedAt: new Date() },
+        { new: true }
+      );
+
+      if (!findCampaign) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        });
+      }
+
+      ResponseAPI.success(res, findCampaign);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Update accountNumber
+  async UpdateStatusTransfer(req, res, next) {
+    try {
+      const findCampaign = await Campaign.findOneAndUpdate(
+        { _id: req.params._id, deletedAt: null },
+        { statusTransfer: "On Request" },
         { new: true }
       );
 

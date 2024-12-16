@@ -54,7 +54,7 @@ const userSchema = new mongoose.Schema(
     statusTransfer: {
       type: String,
       enum: ["On Request", "On Progress", "Success"],
-      default: "On Request",
+      default: null,
     },
     createdAt: {
       type: Date,
@@ -71,6 +71,10 @@ const userSchema = new mongoose.Schema(
     isUrgent: {
       type: Boolean,
       default: false,
+    },
+    accountNumber: {
+      type: String,
+      default: null,
     },
   },
   {
