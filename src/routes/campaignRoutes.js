@@ -18,7 +18,7 @@ router.get("/campaigns/user", auth, campaignController.ReadByUserId);
 router.put(
   "/campaign/status/:_id",
   auth,
-  campaignController.UpdateStatusTransfer
+  campaignController.updateStatusTransfer
 );
 router.put("/campaign/:_id", auth, checkCategory, campaignController.Update);
 router.delete("/campaign/:_id", auth, campaignController.Delete);
@@ -35,7 +35,7 @@ router.patch(
 );
 
 router.patch(
-  "/campaign/:id/statusTransfer/:newStatus",
+  "/campaign/statusTransfer/:_id",
   auth,
   campaignController.updateStatusTransfer
 );

@@ -19,13 +19,6 @@ const auth = async (req, res, next) => {
       return ResponseAPI.unauthorized(res, "User not found");
     }
 
-    if (user.role !== ROLES.ADMIN) {
-      return ResponseAPI.forbidden(
-        res,
-        "Hanya admin yang dapat mengakses endpoint ini"
-      );
-    }
-
     req.user = user;
     next();
   } catch (error) {

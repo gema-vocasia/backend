@@ -345,13 +345,6 @@ const campaignController = {
     try {
       const { id, newStatus } = req.params;
 
-      if (req.user.role !== ROLES.ADMIN) {
-        return ResponseAPI.forbidden(
-          res,
-          "Hanya admin yang dapat mengubah status kampanye"
-        );
-      }
-
       const findCampaign = await Campaign.findOne({
         _id: id,
         deletedAt: null,

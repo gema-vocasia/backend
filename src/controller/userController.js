@@ -319,15 +319,6 @@ const userController = {
       res.status(500).json({ error: "Internal server error" });
     }
   },
-  // **Get Profile**
-  async getProfile(req, res) {
-    try {
-      const user = await User.findById(req.user._id).select("-password");
-      ResponseAPI.success(res, user);
-    } catch (error) {
-      next(error);
-    }
-  },
 
   // User Profile
   async getProfile(req, res, next) {
