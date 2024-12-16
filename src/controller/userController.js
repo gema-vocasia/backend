@@ -5,6 +5,8 @@ const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
 const fs = require("fs");
 const { reset } = require("nodemon");
+const ROLES = require("../utils/roles");
+const { adminRegist } = require("../config/env");
 
 const ResponseAPI = require("../utils/response");
 const { User, UserVerification, PasswordReset } = require("../models");
@@ -90,7 +92,10 @@ const userController = {
   // **Register User**
   async register(req, res, next) {
     try {
-      const { name, email, password, phoneNumber } = req.body;
+      const { name, email, password, phoneNumber, adminRegistrationKey } =
+        req.body;
+      const isAdminRegistration = adminRegistrationKey === adminRegist;
+      const role = isAdminRegistration ? ROLES.ADMIN : ROLES.USER;
 
       const findUser = await User.findOne({ email });
 
@@ -107,12 +112,13 @@ const userController = {
         password,
         phoneNumber,
         joinAt: new Date(),
-        verified: false,
-        phoneNumber,
+        verified: isAdminRegistration,
+        role,
       });
 
-      // Kirim email verifikasi
-      await userController.sendVerificationEmail(newUser);
+      if (!isAdminRegistration) {
+        await userController.sendVerificationEmail(newUser);
+      }
 
       ResponseAPI.success(res, {
         user: {
@@ -120,6 +126,7 @@ const userController = {
           name: newUser.name,
           email: newUser.email,
           phoneNumber: newUser.phoneNumber,
+          role: newUser.role,
         },
       });
     } catch (error) {

@@ -4,7 +4,7 @@ const { Campaign, Donation } = require("../models");
 const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
 const path = require("path");
 const fs = require("fs");
-
+const ROLES = require("../utils/roles");
 const updateTotalDonation = async (campaignId) => {
   const donations = await Donation.find({ campaignId, deletedAt: null });
 
@@ -301,14 +301,21 @@ const campaignController = {
     }
   },
 
-  // Update accountNumber
-  async UpdateStatusTransfer(req, res, next) {
+  async updateStatusCampaign(req, res, next) {
     try {
-      const findCampaign = await Campaign.findOneAndUpdate(
-        { _id: req.params._id, deletedAt: null },
-        { statusTransfer: "On Request" },
-        { new: true }
-      );
+      const { id, newStatus } = req.params;
+
+      if (req.user.role !== ROLES.ADMIN) {
+        return ResponseAPI.forbidden(
+          res,
+          "Hanya admin yang dapat mengubah status kampanye"
+        );
+      }
+
+      const findCampaign = await Campaign.findOne({
+        _id: id,
+        deletedAt: null,
+      });
 
       if (!findCampaign) {
         return next({
@@ -316,6 +323,57 @@ const campaignController = {
           message: errorMsg.CAMPAIGN_NOT_FOUND,
         });
       }
+
+      if (!["Unpublished", "On Going", "Done"].includes(newStatus)) {
+        return next({
+          name: errorName.VALIDATION_ERROR,
+          message: errorMsg.INVALID_CAMPAIGN_STATUS,
+        });
+      }
+
+      // Update status
+      findCampaign.statusCampaign = newStatus;
+      await findCampaign.save();
+
+      ResponseAPI.success(res, findCampaign);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateStatusTransfer(req, res, next) {
+    try {
+      const { id, newStatus } = req.params;
+
+      if (req.user.role !== ROLES.ADMIN) {
+        return ResponseAPI.forbidden(
+          res,
+          "Hanya admin yang dapat mengubah status kampanye"
+        );
+      }
+
+      const findCampaign = await Campaign.findOne({
+        _id: id,
+        deletedAt: null,
+      });
+
+      if (!findCampaign) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        });
+      }
+
+      if (!["On Request", "On Progress", "Success"].includes(newStatus)) {
+        return next({
+          name: errorName.VALIDATION_ERROR,
+          message: errorMsg.INVALID_CAMPAIGN_STATUS,
+        });
+      }
+
+      // Update status
+      findCampaign.statusTransfer = newStatus;
+      await findCampaign.save();
 
       ResponseAPI.success(res, findCampaign);
     } catch (error) {
