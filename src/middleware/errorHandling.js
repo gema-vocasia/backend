@@ -1,7 +1,6 @@
 const { errorMsg, errorName } = require("../utils/errorMiddlewareMsg");
 
 exports.errorHandling = (err, req, res, next) => {
-
   // Jika error adalah BAD_REQUEST
   if (err?.name === errorName.BAD_REQUEST) {
     return res.status(400).json({
@@ -53,6 +52,15 @@ exports.errorHandling = (err, req, res, next) => {
       success: false,
       name: errorName.INTERNAL_SERVER_ERROR,
       message: err?.message ?? "Internal Server Error",
+    });
+  }
+
+  if (err?.name === errorName.KYC_ERROR) {
+    return res.status(400).json({
+      success: false,
+      name: errorName.KYC_ERROR,
+      message:
+        err?.message ?? "Verifikasi KTP diperlukan sebelum membuat kampanye",
     });
   }
 

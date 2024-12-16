@@ -132,12 +132,11 @@ const userController = {
       const currentUrl = "http://localhost:8080/api/v1/user";
       const uniqueString = uuidv4();
 
-      // Simpan ke koleksi verifikasi
       await UserVerification.create({
         userId: _id,
         uniqueString: uniqueString,
         createdAt: Date.now(),
-        expiresAt: Date.now() + 3600000, // 1 jam kedepan
+        expiresAt: Date.now() + 3600000,
       });
 
       const templatePath = path.join("src", "views", "template.html");
@@ -230,13 +229,21 @@ const userController = {
         expiresAt: Date.now() + 3600000, // 1 jam
       });
 
+      const templatePath = path.join("src", "views", "templatePassword.html");
+      const emailTemplate = fs.readFileSync(templatePath, "utf-8");
+      const customizedTemplate = emailTemplate
+        .replace("${redirectUrl}", redirectUrl)
+        .replace("${resetString}", resetString)
+        .replace("${email}", email);
+
       const mailOptions = {
         from: process.env.AUTH_EMAIL,
         to: email,
         subject: "Password Reset Request",
-        html: `<p>Klik link di bawah untuk mereset password:</p>
-           <a href="${redirectUrl}?resetString=${resetString}&email=${email}">Reset Password</a>
-           <p>Link ini akan kedaluwarsa dalam 1 jam.</p>`,
+        html: customizedTemplate,
+        // `<p>Klik link di bawah untuk mereset password:</p>
+        //    <a href="${redirectUrl}?resetString=${resetString}&email=${email}">Reset Password</a>
+        //    <p>Link ini akan kedaluwarsa dalam 1 jam.</p>`,
       };
 
       await transporter.sendMail(mailOptions);
