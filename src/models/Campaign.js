@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
     description: {
       type: String,
       required: [true, "Deskripsi Wajib Diisi"],
-      minlength: [30, "Deskripsi Wajib Minimal 6 Karakter"],
+      minlength: [30, "Deskripsi Wajib Minimal 30 Karakter"],
     },
     statusCampaign: {
       type: String,

@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 const ResponseAPI = require("../utils/response");
-const { Campaign, Donation } = require("../models");
-const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
+const {Campaign, Donation} = require("../models");
+const {errorName, errorMsg} = require("../utils/errorMiddlewareMsg");
 const path = require("path");
 const fs = require("fs");
 const ROLES = require("../utils/roles");
 const updateTotalDonation = async (campaignId) => {
-  const donations = await Donation.find({ campaignId, deletedAt: null });
+  const donations = await Donation.find({campaignId, deletedAt: null});
 
   let totalDonation = 0;
   donations.forEach((donation) => {
@@ -15,7 +15,7 @@ const updateTotalDonation = async (campaignId) => {
     }
   });
 
-  await Campaign.findOneAndUpdate({ _id: campaignId }, { totalDonation });
+  await Campaign.findOneAndUpdate({_id: campaignId}, {totalDonation});
 };
 
 const updateAllCampaignDonations = async (campaigns) => {
@@ -37,7 +37,7 @@ const campaignController = {
         targetAmount,
         categoryId,
       } = req.body;
-
+      console.log(req.body);
       const userId = req.user._id;
 
       if (!req.user || req.user.isKYC !== true) {
@@ -160,16 +160,28 @@ const campaignController = {
   // Read All Campaign
   async Read(req, res, next) {
     try {
-      const findCampaign = await Campaign.find({
-        deletedAt: null,
-        statusCampaign: "On Going",
-      })
-        .populate("userId", "name")
-        .populate("categoryId", "title"); // Hanya campaign aktif
+      let findCampaign = null;
+      if (req.query.isHome === "true") {
+         findCampaign = await Campaign.find({
+          deletedAt: null,
+          statusCampaign: "On Going",
+        })
+          .limit(4)
+          .populate("userId", "name")
+          .populate("categoryId", "title"); // Hanya campaign aktif
+        // Update total donation untuk semua campaign yang ditemukan
+      } else {
+         findCampaign = await Campaign.find({
+          deletedAt: null,
+          statusCampaign: "On Going",
+        })
+          .populate("userId", "name")
+          .populate("categoryId", "title"); // Hanya campaign aktif
+        // Update total donation untuk semua campaign yang ditemukan
+      }
 
-      // Update total donation untuk semua campaign yang ditemukan
       await updateAllCampaignDonations(findCampaign);
-      
+
 
       if (findCampaign.length === 0) {
         return next({
@@ -215,9 +227,9 @@ const campaignController = {
 
       // Update campaign dengan foto baru
       const updatedCampaign = await Campaign.findOneAndUpdate(
-        { _id: req.params._id, deleteAt: null },
-        { photo: req.file.filename, updateAt: new Date() },
-        { new: true }
+        {_id: req.params._id, deleteAt: null},
+        {photo: req.file.filename, updateAt: new Date()},
+        {new: true}
       );
 
       // Jika campaign tidak ditemukan
@@ -284,9 +296,9 @@ const campaignController = {
   async Delete(req, res, next) {
     try {
       const findCampaign = await Campaign.findOneAndUpdate(
-        { _id: req.params._id, deletedAt: null },
-        { deletedAt: new Date() },
-        { new: true }
+        {_id: req.params._id, deletedAt: null},
+        {deletedAt: new Date()},
+        {new: true}
       );
 
       if (!findCampaign) {
@@ -304,8 +316,8 @@ const campaignController = {
 
   async updateStatusCampaign(req, res, next) {
     try {
-      const { _id, newStatus } = req.params;
-
+      const {_id, newStatus} = req.params;
+      console.log(req.user.role, ROLES.ADMIN)
       if (req.user.role !== ROLES.ADMIN) {
         return ResponseAPI.forbidden(
           res,
@@ -317,7 +329,6 @@ const campaignController = {
         _id: _id,
         deletedAt: null,
       });
-
       if (!findCampaign) {
         return next({
           name: errorName.NOT_FOUND,
@@ -325,17 +336,16 @@ const campaignController = {
         });
       }
 
+      console.log(newStatus)
       if (!["Unpublished", "On Going", "Done"].includes(newStatus)) {
         return next({
           name: errorName.VALIDATION_ERROR,
           message: errorMsg.INVALID_CAMPAIGN_STATUS,
         });
       }
-
       // Update status
       findCampaign.statusCampaign = newStatus;
       await findCampaign.save();
-
       ResponseAPI.success(res, findCampaign);
     } catch (error) {
       next(error);
@@ -344,7 +354,7 @@ const campaignController = {
 
   async updateStatusTransfer(req, res, next) {
     try {
-      const { _id, newStatus } = req.params; // Ambil `newStatus` dari URL
+      const {_id, newStatus} = req.params; // Ambil `newStatus` dari URL
       console.log(newStatus); // Cek apakah status sudah benar
 
       // Temukan campaign berdasarkan ID
@@ -402,6 +412,43 @@ const campaignController = {
       next(error);
     }
   },
+
+  async updateUrgentCampaign(req, res, next) {
+    try {
+      const {_id, newStatus} = req.params;
+      if (req.user.role !== ROLES.ADMIN) {
+        return ResponseAPI.forbidden(
+          res,
+          "Hanya admin yang dapat mengubah status urgent"
+        );
+      }
+
+      const findCampaign = await Campaign.findOne({
+        _id: _id,
+        deletedAt: null,
+      });
+      if (!findCampaign) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        });
+      }
+
+      if (!["true", "false"].includes(newStatus)) {
+        return next({
+          name: errorName.VALIDATION_ERROR,
+          message: errorMsg.INVALID_URGENT_STATUS,
+        });
+      }
+      // Update status
+      findCampaign.isUrgent = newStatus;
+      await findCampaign.save();
+      ResponseAPI.success(res, findCampaign);
+    } catch (error) {
+      next(error);
+    }
+  },
+
 };
 
 module.exports = campaignController;

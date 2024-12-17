@@ -16,6 +16,7 @@ const errorMsg = {
   DONATION_NOT_FOUND: "Donation Not Found",
   KYC_NOT_FOUND: "KYC Not Found",
   VERIFICATION_LINK_EXPIRED: "Verification Link invalid Or Expired",
+  INVALID_URGENT_STATUS: "Invalid urgent status",
 };
 
 module.exports = { errorName, errorMsg };
