@@ -1,108 +1,110 @@
 <!DOCTYPE html>
 <html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Terverifikasi</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Email Terverifikasi</title>
+    <!-- Tambahkan Google Fonts untuk Poppins -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
 
-  <!-- Tambahkan Google Fonts untuk Poppins -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
-
-  <style>
-    /* Umum untuk body */
-    body {
-      margin: 0;
-      padding: 0;
-      color: #fff;
-      font-family: 'Poppins', sans-serif;
-      height: 100vh;
-      display: flex;
-    }
-
-    div {
-      display: flex;
-      flex-direction: column;
-      margin: 0 auto;
-      width: 50%;
-      align-items: center;
-      padding-bottom: 25px;
-      padding-top: 10px;
-      align-self: center;
-      border-radius: 10px;
-      box-shadow: 10px 10px 5px lightgray;
-      background-color: #5e84c5;
-    }
-
-    /* Gaya untuk teks */
-    h2,
-    h3 {
-      text-align: center;
-      padding: 10px;
-      width: 80%;
-      color: #fff;
-    }
-
-    /* Tombol */
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      font-weight: bold;
-      color: #fff;
-      background-color: #1a4ea9;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 20px;
-      text-transform: uppercase;
-    }
-
-    button:hover {
-      background-color: #03428c;
-    }
-
-    /* Animasi */
-    @keyframes swing {
-      20% {
-        transform: rotate(15deg);
+    <style>
+      /* Umum untuk body */
+      body {
+        margin: 0;
+        padding: 0;
+        color: #fff;
+        font-family: "Poppins", sans-serif;
+        height: 100vh;
+        display: flex;
       }
 
-      40% {
-        transform: rotate(-10deg);
+      div {
+        display: flex;
+        flex-direction: column;
+        margin: 0 auto;
+        width: 50%;
+        align-items: center;
+        padding-bottom: 25px;
+        padding-top: 10px;
+        align-self: center;
+        border-radius: 10px;
+        box-shadow: 10px 10px 5px lightgray;
+        background-color: #5e84c5;
       }
 
-      60% {
-        transform: rotate(5deg);
+      /* Gaya untuk teks */
+      h2,
+      h3 {
+        text-align: center;
+        padding: 10px;
+        width: 80%;
+        color: #fff;
       }
 
-      80% {
-        transform: rotate(-5deg);
+      /* Tombol */
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        color: #fff;
+        background-color: #1a4ea9;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 20px;
+        text-transform: uppercase;
       }
 
-      100% {
-        transform: rotate(0deg);
+      button:hover {
+        background-color: #03428c;
       }
-    }
 
-    .swing {
-      -webkit-transform-origin: top center;
-      transform-origin: top center;
-      -webkit-animation-name: swing;
-      animation-name: swing;
-    }
-  </style>
-</head>
+      /* Animasi */
+      @keyframes swing {
+        20% {
+          transform: rotate(15deg);
+        }
 
-<body></body>
-<script>
-  const queryString = window.location.search;
-  const urlParams = new URLSearchParams(queryString);
-  const error = urlParams.get("error");
-  const message = urlParams.get("message");
+        40% {
+          transform: rotate(-10deg);
+        }
 
-  const bodyContent = !error
-    ? `<div>
+        60% {
+          transform: rotate(5deg);
+        }
+
+        80% {
+          transform: rotate(-5deg);
+        }
+
+        100% {
+          transform: rotate(0deg);
+        }
+      }
+
+      .swing {
+        -webkit-transform-origin: top center;
+        transform-origin: top center;
+        -webkit-animation-name: swing;
+        animation-name: swing;
+      }
+    </style>
+  </head>
+
+  <body></body>
+  <script>
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const error = urlParams.get("error");
+    const message = urlParams.get("message");
+
+    const bodyContent = !error
+      ? `<div>
           <h2>Email Anda telah terverifikasi</h2>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -117,10 +119,10 @@
             />
           </svg>
           <h3>Silakan login sekarang</h3>
-          <button onclick="window.location.href='/login';">Login</button>
+          <button onclick="window.location.href='http://localhost:5173/login';">Login</button>
           
         </div>`
-    : `<div>
+      : `<div>
           <h2>${message}</h2>
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -132,11 +134,10 @@
             <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/>
           </svg>
           <h3>Coba lagi nanti!</h3>
-          <button onclick="window.location.href='/login';">Coba Lagi</button>
+          <button onclick="window.location.href='http://localhost:5173/login';">Coba Lagi</button>
         </div>`;
 
-  document.body.style.backgroundColor = "#FFFFFF";
-  document.body.innerHTML = bodyContent;
-</script>
-
+    document.body.style.backgroundColor = "#FFFFFF";
+    document.body.innerHTML = bodyContent;
+  </script>
 </html>

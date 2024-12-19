@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema(
     },
     photo_url: {
       type: String,
-      default: "defaultProfile.png",
+      default: "images/defaultProfile.png",
     },
     isKYC: {
       type: Boolean,

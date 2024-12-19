@@ -18,6 +18,34 @@ const updateTotalDonation = async (campaignId) => {
   await Campaign.findOneAndUpdate({ _id: campaignId }, { totalDonation });
 };
 
+const updateCampaignStatusByDate = async () => {
+  try {
+    // Ambil semua campaign yang sedang berjalan dan belum dihapus
+    const ongoingCampaigns = await Campaign.find({
+      statusCampaign: "On Going",
+      deletedAt: null,
+    });
+
+    const today = new Date();
+
+    const updatePromises = ongoingCampaigns.map(async (campaign) => {
+      // Jika endDate sudah lewat, ubah status menjadi "Done"
+      if (new Date(campaign.endDate) < today) {
+        campaign.statusCampaign = "Done";
+        await campaign.save();
+      }
+    });
+
+    // Tunggu semua update selesai
+    await Promise.all(updatePromises);
+  } catch (error) {
+    console.error(
+      "Error memperbarui status campaign berdasarkan tanggal:",
+      error
+    );
+  }
+};
+
 const updateAllCampaignDonations = async (campaigns) => {
   const updatePromises = campaigns.map((campaign) =>
     updateTotalDonation(campaign._id)
@@ -37,7 +65,7 @@ const campaignController = {
         targetAmount,
         categoryId,
       } = req.body;
-
+      console.log(req.body);
       const userId = req.user._id;
 
       if (!req.user || req.user.isKYC !== true) {
@@ -107,6 +135,9 @@ const campaignController = {
     try {
       const userId = req.user._id;
 
+      // Update status campaign berdasarkan tanggal
+      await updateCampaignStatusByDate();
+
       // Mencari campaign berdasarkan userId dan memastikan campaign aktif (deletedAt: null)
       const findCampaignsByUser = await Campaign.find({
         userId: userId,
@@ -136,6 +167,9 @@ const campaignController = {
     try {
       const campaignId = req.params._id;
 
+      // Update status campaign berdasarkan tanggal
+      await updateCampaignStatusByDate();
+
       // Update total donation untuk campaign yang diminta
       await updateTotalDonation(campaignId);
 
@@ -160,16 +194,29 @@ const campaignController = {
   // Read All Campaign
   async Read(req, res, next) {
     try {
-      const findCampaign = await Campaign.find({
-        deletedAt: null,
-        statusCampaign: "On Going",
-      })
-        .populate("userId", "name")
-        .populate("categoryId", "title"); // Hanya campaign aktif
+      let findCampaign = null;
+      if (req.query.isHome === "true") {
+        findCampaign = await Campaign.find({
+          deletedAt: null,
+          statusCampaign: "On Going",
+        })
+          .populate("userId", "name")
+          .populate("categoryId", "title"); // Hanya campaign aktif
+        // Update total donation untuk semua campaign yang ditemukan
+      } else {
+        findCampaign = await Campaign.find({
+          deletedAt: null,
+          statusCampaign: "On Going",
+        })
+          .populate("userId", "name")
+          .populate("categoryId", "title"); // Hanya campaign aktif
+        // Update total donation untuk semua campaign yang ditemukan
+      }
 
-      // Update total donation untuk semua campaign yang ditemukan
       await updateAllCampaignDonations(findCampaign);
-      
+
+      // Update status campaign berdasarkan tanggal
+      await updateCampaignStatusByDate();
 
       if (findCampaign.length === 0) {
         return next({
@@ -305,7 +352,7 @@ const campaignController = {
   async updateStatusCampaign(req, res, next) {
     try {
       const { _id, newStatus } = req.params;
-
+      console.log(req.user.role, ROLES.ADMIN);
       if (req.user.role !== ROLES.ADMIN) {
         return ResponseAPI.forbidden(
           res,
@@ -317,7 +364,6 @@ const campaignController = {
         _id: _id,
         deletedAt: null,
       });
-
       if (!findCampaign) {
         return next({
           name: errorName.NOT_FOUND,
@@ -325,17 +371,16 @@ const campaignController = {
         });
       }
 
+      console.log(newStatus);
       if (!["Unpublished", "On Going", "Done"].includes(newStatus)) {
         return next({
           name: errorName.VALIDATION_ERROR,
           message: errorMsg.INVALID_CAMPAIGN_STATUS,
         });
       }
-
       // Update status
       findCampaign.statusCampaign = newStatus;
       await findCampaign.save();
-
       ResponseAPI.success(res, findCampaign);
     } catch (error) {
       next(error);
@@ -344,8 +389,8 @@ const campaignController = {
 
   async updateStatusTransfer(req, res, next) {
     try {
-      const { _id, newStatus } = req.params; // Ambil `newStatus` dari URL
-      console.log(newStatus); // Cek apakah status sudah benar
+      const { _id, newStatus } = req.params; // Ambil newStatus dari URL
+      const { accountNumber, bankName } = req.body;
 
       // Temukan campaign berdasarkan ID
       const findCampaign = await Campaign.findOne({
@@ -372,8 +417,14 @@ const campaignController = {
 
         // Ubah status ke "On Progress"
         findCampaign.statusTransfer = "On Progress";
-        await findCampaign.save();
 
+        if (accountNumber) {
+          findCampaign.accountNumber = accountNumber;
+        }
+        if (bankName) {
+          findCampaign.bankName = bankName;
+        }
+        await findCampaign.save();
         return ResponseAPI.success(res, findCampaign);
       }
 
@@ -388,6 +439,12 @@ const campaignController = {
         }
 
         findCampaign.statusTransfer = newStatus;
+        if (accountNumber) {
+          findCampaign.accountNumber = accountNumber;
+        }
+        if (bankName) {
+          findCampaign.bankName = bankName;
+        }
         await findCampaign.save();
 
         return ResponseAPI.success(res, findCampaign);
@@ -398,6 +455,42 @@ const campaignController = {
         res,
         "Anda tidak memiliki akses untuk mengubah status."
       );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateUrgentCampaign(req, res, next) {
+    try {
+      const { _id, newStatus } = req.params;
+      if (req.user.role !== ROLES.ADMIN) {
+        return ResponseAPI.forbidden(
+          res,
+          "Hanya admin yang dapat mengubah status urgent"
+        );
+      }
+
+      const findCampaign = await Campaign.findOne({
+        _id: _id,
+        deletedAt: null,
+      });
+      if (!findCampaign) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        });
+      }
+
+      if (!["true", "false"].includes(newStatus)) {
+        return next({
+          name: errorName.VALIDATION_ERROR,
+          message: errorMsg.INVALID_URGENT_STATUS,
+        });
+      }
+      // Update status
+      findCampaign.isUrgent = newStatus;
+      await findCampaign.save();
+      ResponseAPI.success(res, findCampaign);
     } catch (error) {
       next(error);
     }

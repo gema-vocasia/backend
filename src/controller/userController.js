@@ -114,6 +114,7 @@ const userController = {
         joinAt: new Date(),
         verified: isAdminRegistration,
         role,
+        photo_url: "../public/upload/default.jpg",
       });
 
       if (!isAdminRegistration) {
