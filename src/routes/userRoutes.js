@@ -10,10 +10,12 @@ userRoutes.post("/admin/register", adminRegistration, userController.register); 
 userRoutes.post("/user/upload", auth, upload.single("nationalIdentityCard"), userController.Upload ); // Untuk Upload KTP
 userRoutes.get("/user/profile", auth, userController.getProfile); // Untuk Mendapatkan Profile
 userRoutes.put( "/user/profile", auth, upload.single("profilePhoto"), userController.updateProfile ); // Untuk Memperbarui Foto Profile
+userRoutes.delete("/user/profile/photo", auth, userController.deleteProfilePhoto); // Untuk Menghapus Foto Profile
 userRoutes.get("/user/verify/:uniqueString", userController.verifyEmail); // Untuk Memverifikasi Email
 userRoutes.get("/user/verifed", auth, userController.verified); // Untuk Mendapatkan Halaman Verified
 userRoutes.patch("/user/kyc/:_id", auth, userController.updateKYC); // Untuk Memverifikasi KTP
 userRoutes.post( "/user/requestResetPassword", userController.requestResetPassword ); // Untuk Meminta Reset Password
 userRoutes.post("/user/verifyreset", userController.verifyAndResetPassword); // Untuk Memverifikasi Reset Password
+
 
 module.exports = userRoutes;

@@ -114,7 +114,7 @@ const userController = {
         joinAt: new Date(),
         verified: isAdminRegistration,
         role,
-        photo_url: "../public/upload/default.jpg",
+        photo_url: "images/defaultProfile.png",
       });
 
       if (!isAdminRegistration) {
@@ -344,6 +344,10 @@ const userController = {
         password,
       } = req.body;
       const findUser = await User.findById(req.user._id).select("-password");
+      
+      
+    // Hanya hapus foto profil lama jika ada
+    if (findUser.photo_url) {
       const oldFilePath = path.join(
         __dirname,
         "..",
@@ -353,6 +357,15 @@ const userController = {
         findUser.photo_url
       );
 
+      fs.unlink(oldFilePath, (err) => {
+        if (err) {
+          console.error("Failed to delete old file:", err);
+        } else {
+          console.log(`Deleted file: ${oldFilePath}`);
+        }
+      });
+    }
+
       if (req.body.password) findUser.password = password;
       if (name) findUser.name = name;
       if (email) findUser.email = email;
@@ -360,14 +373,9 @@ const userController = {
         findUser.nationalIdentityCard = nationalIdentityCard;
       if (isKYC) findUser.isKYC = isKYC;
       if (phoneNumber) findUser.phoneNumber = phoneNumber;
+
       if (req.file?.filename) {
         findUser.photo_url = req.file.filename;
-        fs.unlink(oldFilePath, (err) => {
-          if (err) console.log(err);
-          else {
-            console.log(`\nDeleted file: ${oldFilePath.photo}`);
-          }
-        });
       }
 
       await findUser.save();
@@ -422,6 +430,57 @@ const userController = {
 
       // Kirim respons sukses setelah update
       return ResponseAPI.success(res, updatedUser); // Pastikan return di sini
+    } catch (error) {
+      // Tangani error secara umum
+      console.error(error);
+      next(error);
+    }
+  },
+  async deleteProfilePhoto(req, res, next) {
+    try {
+      // Cari pengguna berdasarkan ID
+      const findUser = await User.findById(req.user._id);
+  
+      if (!findUser) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.USER_NOT_FOUND,
+        });
+      }
+  
+      // Jika pengguna memiliki foto, hapus file foto dari server
+      if (findUser.photo_url) {
+        const oldFilePath = path.join(
+          __dirname,
+          "..",
+          "..",
+          "public",
+          "upload",
+          findUser.photo_url
+        );
+  
+        if (fs.existsSync(oldFilePath)) {  // Check if the file exists
+          fs.unlink(oldFilePath, (err) => {
+              if (err) {
+                  console.error("Error deleting file:", err);
+                  return next(err);  // Pass error to the error handler
+              }
+              console.log(`Deleted file: ${oldFilePath}`);
+          });
+      } else {
+          console.log("File does not exist:", oldFilePath);
+      }
+  
+        // Kosongkan atribut photo_url di database
+        findUser.photo_url = null;
+        await findUser.save();
+      }
+  
+      // Kirim respons sukses setelah penghapusan
+      ResponseAPI.success(res, {
+        message: "Foto profil berhasil dihapus",
+        user: findUser,
+      });
     } catch (error) {
       // Tangani error secara umum
       console.error(error);
