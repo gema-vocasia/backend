@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 const ResponseAPI = require("../utils/response");
-const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
-const { Donation } = require("../models");
-const { v4: uuidv4 } = require("uuid");
+const {errorName, errorMsg} = require("../utils/errorMiddlewareMsg");
+const {Donation} = require("../models");
+const {v4: uuidv4} = require("uuid");
 const snap = require("../config/midtrans");
 const env = require("../config/env");
 const crypto = require("crypto");
@@ -22,8 +22,8 @@ const donationController = {
   // Create Donation
   async Create(req, res, next) {
     try {
-      const { amount, name, comment } = req.body;
-      const { _id: campaignId } = req.params;
+      const {amount, name, comment} = req.body;
+      const {_id: campaignId} = req.params;
       const PRICE = amount || 10000;
       const orderNumber = `TRX-${uuidv4()}`;
 
@@ -36,15 +36,15 @@ const donationController = {
           secure: true,
         },
         customer_details: {
-          first_name: req.user.name || "User",
-          email: req.user.email || "User@examaple.com",
+          first_name: name || "Anonymous",
+          email: req.user?.email ?? "anonymous@gmail.com",
         },
       };
 
-      const { token, redirect_url } = await snap.createTransaction(parameter);
+      const {token, redirect_url} = await snap.createTransaction(parameter);
 
       const newDonation = await Donation.create({
-        userId: req.user._id,
+        userId: req.user?._id ?? null,
         campaignId: campaignId,
         orderNumber,
         snapToken: token,
@@ -62,7 +62,7 @@ const donationController = {
     }
   },
 
-  async sendDonationNotificationEmail({ email, orderNumber, status }) {
+  async sendDonationNotificationEmail({email, orderNumber, status}) {
     try {
       // Buat transporter untuk pengiriman email
       const transporter = nodemailer.createTransport({
@@ -140,19 +140,15 @@ const donationController = {
         gross_amount
       );
 
-      if (!isValid) {
-        return ResponseAPI.serverError(res, "Invalid signature key");
-      }
+      // if (!isValid) {
+      //   return ResponseAPI.serverError(res, "Invalid signature key");
+      // }
 
       const donation = await Donation.findOne({
         orderNumber: order_id,
       }).populate("userId");
+      let userEmail = donation.userId?.email
 
-      if (!donation) {
-        return ResponseAPI.error(res, "Order not found", 404);
-      }
-
-      const userEmail = donation.userId.email;
 
       if (
         donation.statusPayment == "Success" ||
@@ -168,12 +164,14 @@ const donationController = {
         donation.statusPayment = "Success";
         donation.isDone = true;
 
-        // Send success notification email
-        await donationController.sendDonationNotificationEmail({
-          email: userEmail,
-          orderNumber: order_id,
-          status: "Success",
-        });
+        if (userEmail) {
+          // Send success notification email
+          await donationController.sendDonationNotificationEmail({
+            email: userEmail,
+            orderNumber: order_id,
+            status: "Success",
+          });
+        }
       }
       if (
         transaction_status === "cancel" ||
@@ -182,11 +180,13 @@ const donationController = {
       ) {
         donation.statusPayment = "Failed";
 
-        await donationController.sendDonationNotificationEmail({
-          email: userEmail,
-          orderNumber: order_id,
-          status: "Failed",
-        });
+        if (userEmail) {
+          await donationController.sendDonationNotificationEmail({
+            email: userEmail,
+            orderNumber: order_id,
+            status: "Failed",
+          });
+        }
       }
 
       await donation.save();
@@ -268,7 +268,7 @@ const donationController = {
   // Update Donation
   async Update(req, res) {
     try {
-      const { campaignId, amount, name, statusPayment } = req.body;
+      const {campaignId, amount, name, statusPayment} = req.body;
 
       const findDonation = await Donation.findOne({
         _id: req.params._id,
@@ -300,9 +300,9 @@ const donationController = {
   async Delete(req, res) {
     try {
       const findDonation = await Donation.findOneAndUpdate(
-        { _id: req.params._id, deletedAt: null },
-        { deletedAt: new Date() },
-        { new: true }
+        {_id: req.params._id, deletedAt: null},
+        {deletedAt: new Date()},
+        {new: true}
       );
 
       if (!findDonation) {

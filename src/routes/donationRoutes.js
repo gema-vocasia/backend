@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { donationController } = require("../controller");
-const { auth, checkCampaign } = require("../middleware");
+const {donationController} = require("../controller");
+const {auth, checkCampaign, notMandatoryAuth} = require("../middleware");
 
-router.post("/donation/:_id", auth, checkCampaign, donationController.Create);
+router.post("/donation/:_id", notMandatoryAuth, checkCampaign, donationController.Create);
 router.get("/donations/user", auth, donationController.ReadByUserId);
 router.post("/notification", donationController.donationNotification);
 router.get("/donations/:_id", donationController.ReadByCampaignId);
