@@ -332,6 +332,72 @@ const userController = {
     }
   },
 
+  async getAll(req, res, next) {
+    try {
+      const user = await User.find(req.user._id).select("-password");
+
+      ResponseAPI.success(res, user);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async ReadByAdmin(req, res, next) {
+    try {
+      if (req.user.role !== "ADMIN")
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.UNAUTHORIZED,
+        });
+
+      const users = await User.find({ deletedAt: null });
+      ResponseAPI.success(res, users);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async UpdateByAdmin(req, res, next) {
+    try {
+      const {
+        name,
+        email,
+        phoneNumber,
+        nationalIdentityCard,
+        isKYC,
+        verified,
+      } = req.body;
+
+      if (req.user.role !== "ADMIN") {
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.UNAUTHORIZED,
+        });
+      }
+
+      const user = await User.findById(req.params._id).select("-password");
+
+      // Update user fields
+      if (name) user.name = name;
+      if (email) user.email = email;
+      if (phoneNumber) user.phoneNumber = phoneNumber;
+      if (nationalIdentityCard)
+        user.nationalIdentityCard = nationalIdentityCard;
+      if (typeof isKYC !== "undefined") user.isKYC = isKYC;
+      if (typeof verified !== "undefined") user.verified = verified;
+
+      // Save updated user
+      await user.save();
+
+      ResponseAPI.success(res, {
+        message: "User updated successfully",
+        user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // Update User
   async updateProfile(req, res, next) {
     try {
@@ -344,27 +410,26 @@ const userController = {
         password,
       } = req.body;
       const findUser = await User.findById(req.user._id).select("-password");
-      
-      
-    // Hanya hapus foto profil lama jika ada
-    if (findUser.photo_url) {
-      const oldFilePath = path.join(
-        __dirname,
-        "..",
-        "..",
-        "public",
-        "upload",
-        findUser.photo_url
-      );
 
-      fs.unlink(oldFilePath, (err) => {
-        if (err) {
-          console.error("Failed to delete old file:", err);
-        } else {
-          console.log(`Deleted file: ${oldFilePath}`);
-        }
-      });
-    }
+      // Hanya hapus foto profil lama jika ada
+      if (findUser.photo_url) {
+        const oldFilePath = path.join(
+          __dirname,
+          "..",
+          "..",
+          "public",
+          "upload",
+          findUser.photo_url
+        );
+
+        fs.unlink(oldFilePath, (err) => {
+          if (err) {
+            console.error("Failed to delete old file:", err);
+          } else {
+            console.log(`Deleted file: ${oldFilePath}`);
+          }
+        });
+      }
 
       if (req.body.password) findUser.password = password;
       if (name) findUser.name = name;
@@ -440,14 +505,14 @@ const userController = {
     try {
       // Cari pengguna berdasarkan ID
       const findUser = await User.findById(req.user._id);
-  
+
       if (!findUser) {
         return next({
           name: errorName.NOT_FOUND,
           message: errorMsg.USER_NOT_FOUND,
         });
       }
-  
+
       // Jika pengguna memiliki foto, hapus file foto dari server
       if (findUser.photo_url) {
         const oldFilePath = path.join(
@@ -458,24 +523,25 @@ const userController = {
           "upload",
           findUser.photo_url
         );
-  
-        if (fs.existsSync(oldFilePath)) {  // Check if the file exists
+
+        if (fs.existsSync(oldFilePath)) {
+          // Check if the file exists
           fs.unlink(oldFilePath, (err) => {
-              if (err) {
-                  console.error("Error deleting file:", err);
-                  return next(err);  // Pass error to the error handler
-              }
-              console.log(`Deleted file: ${oldFilePath}`);
+            if (err) {
+              console.error("Error deleting file:", err);
+              return next(err); // Pass error to the error handler
+            }
+            console.log(`Deleted file: ${oldFilePath}`);
           });
-      } else {
+        } else {
           console.log("File does not exist:", oldFilePath);
-      }
-  
+        }
+
         // Kosongkan atribut photo_url di database
         findUser.photo_url = null;
         await findUser.save();
       }
-  
+
       // Kirim respons sukses setelah penghapusan
       ResponseAPI.success(res, {
         message: "Foto profil berhasil dihapus",

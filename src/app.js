@@ -5,6 +5,9 @@ const { port, NgrokClient } = require("./config/env");
 const routes = require("./routes");
 const morgan = require("morgan");
 const ngrok = require("ngrok");
+const startScheduler = require("./middleware/scheduler");
+
+startScheduler();
 
 const app = express();
 
@@ -15,7 +18,7 @@ app.use(morgan("dev"));
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ limit: "5mb", extended: true }));
-app.use('/api/v1/files', express.static("public"));
+app.use("/api/v1/files", express.static("public"));
 
 // Koneksi ke database
 connectDB();

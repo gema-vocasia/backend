@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 const ResponseAPI = require("../utils/response");
-const {Campaign, Donation} = require("../models");
-const {errorName, errorMsg} = require("../utils/errorMiddlewareMsg");
+const { Campaign, Donation } = require("../models");
+const { errorName, errorMsg } = require("../utils/errorMiddlewareMsg");
 const path = require("path");
 const fs = require("fs");
 const ROLES = require("../utils/roles");
 const updateTotalDonation = async (campaignId) => {
-  const donations = await Donation.find({campaignId, deletedAt: null});
+  const donations = await Donation.find({ campaignId, deletedAt: null });
 
   let totalDonation = 0;
   donations.forEach((donation) => {
@@ -15,7 +15,7 @@ const updateTotalDonation = async (campaignId) => {
     }
   });
 
-  await Campaign.findOneAndUpdate({_id: campaignId}, {totalDonation});
+  await Campaign.findOneAndUpdate({ _id: campaignId }, { totalDonation });
 };
 
 const updateAllCampaignDonations = async (campaigns) => {
@@ -131,6 +131,62 @@ const campaignController = {
     }
   },
 
+  async ReadByAdmin(req, res, next) {
+    try {
+      if (req.user.role !== "ADMIN")
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.UNAUTHORIZED,
+        });
+
+      const users = await User.find({ deletedAt: null });
+      ResponseAPI.success(res, users);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async UpdateByAdmin(req, res, next) {
+    try {
+      const {
+        name,
+        email,
+        phoneNumber,
+        nationalIdentityCard,
+        isKYC,
+        verified,
+      } = req.body;
+
+      if (req.user.role !== "ADMIN") {
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.UNAUTHORIZED,
+        });
+      }
+
+      const user = await User.findById(req.params._id).select("-password");
+
+      // Update user fields
+      if (name) user.name = name;
+      if (email) user.email = email;
+      if (phoneNumber) user.phoneNumber = phoneNumber;
+      if (nationalIdentityCard)
+        user.nationalIdentityCard = nationalIdentityCard;
+      if (typeof isKYC !== "undefined") user.isKYC = isKYC;
+      if (typeof verified !== "undefined") user.verified = verified;
+
+      // Save updated user
+      await user.save();
+
+      ResponseAPI.success(res, {
+        message: "User updated successfully",
+        user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // Read Campaign by ID
   async ReadById(req, res, next) {
     try {
@@ -162,7 +218,7 @@ const campaignController = {
     try {
       let findCampaign = null;
       if (req.query.isHome === "true") {
-         findCampaign = await Campaign.find({
+        findCampaign = await Campaign.find({
           deletedAt: null,
           statusCampaign: "On Going",
         })
@@ -171,7 +227,7 @@ const campaignController = {
           .populate("categoryId", "title"); // Hanya campaign aktif
         // Update total donation untuk semua campaign yang ditemukan
       } else {
-         findCampaign = await Campaign.find({
+        findCampaign = await Campaign.find({
           deletedAt: null,
           statusCampaign: "On Going",
         })
@@ -181,7 +237,6 @@ const campaignController = {
       }
 
       await updateAllCampaignDonations(findCampaign);
-
 
       if (findCampaign.length === 0) {
         return next({
@@ -227,9 +282,9 @@ const campaignController = {
 
       // Update campaign dengan foto baru
       const updatedCampaign = await Campaign.findOneAndUpdate(
-        {_id: req.params._id, deleteAt: null},
-        {photo: req.file.filename, updateAt: new Date()},
-        {new: true}
+        { _id: req.params._id, deleteAt: null },
+        { photo: req.file.filename, updateAt: new Date() },
+        { new: true }
       );
 
       // Jika campaign tidak ditemukan
@@ -296,9 +351,9 @@ const campaignController = {
   async Delete(req, res, next) {
     try {
       const findCampaign = await Campaign.findOneAndUpdate(
-        {_id: req.params._id, deletedAt: null},
-        {deletedAt: new Date()},
-        {new: true}
+        { _id: req.params._id, deletedAt: null },
+        { deletedAt: new Date() },
+        { new: true }
       );
 
       if (!findCampaign) {
@@ -316,8 +371,8 @@ const campaignController = {
 
   async updateStatusCampaign(req, res, next) {
     try {
-      const {_id, newStatus} = req.params;
-      console.log(req.user.role, ROLES.ADMIN)
+      const { _id, newStatus } = req.params;
+      console.log(req.user.role, ROLES.ADMIN);
       if (req.user.role !== ROLES.ADMIN) {
         return ResponseAPI.forbidden(
           res,
@@ -336,7 +391,7 @@ const campaignController = {
         });
       }
 
-      console.log(newStatus)
+      console.log(newStatus);
       if (!["Unpublished", "On Going", "Done"].includes(newStatus)) {
         return next({
           name: errorName.VALIDATION_ERROR,
@@ -354,7 +409,9 @@ const campaignController = {
 
   async updateStatusTransfer(req, res, next) {
     try {
-      const {_id, newStatus} = req.params; // Ambil `newStatus` dari URL
+      const { _id, newStatus } = req.params; // Ambil `newStatus` dari URL
+      const { accountNumber, bankName } = req.body;
+
       console.log(newStatus); // Cek apakah status sudah benar
 
       // Temukan campaign berdasarkan ID
@@ -382,8 +439,13 @@ const campaignController = {
 
         // Ubah status ke "On Progress"
         findCampaign.statusTransfer = "On Progress";
-        await findCampaign.save();
 
+        if (accountNumber && bankName) {
+          findCampaign.accountNumber = accountNumber;
+          findCampaign.bankName = bankName;
+        }
+
+        await findCampaign.save();
         return ResponseAPI.success(res, findCampaign);
       }
 
@@ -415,7 +477,7 @@ const campaignController = {
 
   async updateUrgentCampaign(req, res, next) {
     try {
-      const {_id, newStatus} = req.params;
+      const { _id, newStatus } = req.params;
       if (req.user.role !== ROLES.ADMIN) {
         return ResponseAPI.forbidden(
           res,
@@ -448,7 +510,6 @@ const campaignController = {
       next(error);
     }
   },
-
 };
 
 module.exports = campaignController;
