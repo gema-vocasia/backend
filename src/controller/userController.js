@@ -570,6 +570,82 @@ const userController = {
       next(error);
     }
   },
+
+  async ReadByAdmin(req, res, next) {
+    try {
+      if (req.user.role !== "ADMIN")
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.UNAUTHORIZED,
+        });
+
+      const users = await User.find({ deletedAt: null });
+      ResponseAPI.success(res, users);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async UpdateByAdmin(req, res, next) {
+    try {
+      const {
+        name,
+        email,
+        phoneNumber,
+        nationalIdentityCard,
+        isKYC,
+        verified,
+      } = req.body;
+
+      if (req.user.role !== "ADMIN") {
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.UNAUTHORIZED,
+        });
+      }
+
+      const user = await User.findById(req.params._id).select("-password");
+
+      // Update user fields
+      if (name) user.name = name;
+      if (email) user.email = email;
+      if (phoneNumber) user.phoneNumber = phoneNumber;
+      if (nationalIdentityCard) user.nationalIdentityCard = nationalIdentityCard;
+      if (typeof isKYC !== "undefined") user.isKYC = isKYC;
+      if (typeof verified !== "undefined") user.verified = verified;
+
+      // Save updated user
+      await user.save();
+
+      ResponseAPI.success(res, {
+        message: "User updated successfully",
+        user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Delete User by Admin
+  async DeleteByAdmin(req, res, next) {
+    try {
+      if (req.user.role !== "ADMIN")
+        return next({
+          name: errorName.UNAUTHORIZED,
+          message: errorMsg.UNAUTHORIZED,
+        });
+      const user = await User.findById(req.params._id);
+      user.deletedAt = new Date();
+      await user.save();
+      ResponseAPI.success(res, {
+        message: "User deleted successfully",
+        user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
 };
 
 module.exports = userController;

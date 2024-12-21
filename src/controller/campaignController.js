@@ -510,6 +510,136 @@ const campaignController = {
       next(error);
     }
   },
+
+  // Khusus Admin
+  async ReadByAdmin(req, res, next) {
+    try {
+      
+      const findCampaign = await Campaign.find({ deletedAt: null });
+
+      if (findCampaign.length === 0) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        });
+      }
+
+      ResponseAPI.success(res, findCampaign);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async UpdateByAdmin(req, res, next) {
+    try {
+      const {
+        title,
+        description,
+        startDate,
+        endDate,
+        targetAmount,
+        categoryId,
+        isUrgent,
+      } = req.body;
+
+      // Pastikan hanya admin yang dapat mengupdate campaign
+      if (req.user.role !== "ADMIN") {
+        return next({
+          name: errorName.FORBIDDEN,
+          message: errorMsg.UNAUTHORIZED,
+        });
+      }
+
+      // Pastikan ID campaign ada dalam parameter
+      if (!req.params._id) {
+        return next({
+          name: errorName.NOT_FOUND,
+          message: errorMsg.CAMPAIGN_NOT_FOUND,
+        });
+      }
+
+      // Cari campaign yang akan diupdate
+      const campaign = await Campaign.findOne({
+        _id: req.params._id,
+        deleteAt: null,
+      });
+
+      // Jika campaign tidak ditemukan
+      if (!campaign) {
+        return next({
+          name: "NotFoundError",
+          message: "Campaign tidak ditemukan.",
+        });
+      }
+
+      // Buat objek untuk update hanya jika ada perubahan pada field tersebut
+      const updateData = {};
+
+      // Cek setiap field jika ada data baru, baru diupdate
+      if (title && title !== campaign.title) updateData.title = title;
+      if (description && description !== campaign.description)
+        updateData.description = description;
+      if (targetAmount && targetAmount !== campaign.targetAmount)
+        updateData.targetAmount = targetAmount;
+      if (categoryId && categoryId !== campaign.categoryId)
+        updateData.categoryId = categoryId;
+      if (startDate && startDate !== campaign.startDate)
+        updateData.startDate = startDate;
+      if (endDate && endDate !== campaign.endDate) updateData.endDate = endDate;
+      if (isUrgent !== undefined && isUrgent !== campaign.isUrgent)
+        updateData.isUrgent = isUrgent;
+
+      // Jika ada foto baru yang diupload
+      let newPhoto = campaign.photo; // Tetap menggunakan foto lama jika tidak ada foto baru
+      if (req.file) {
+        // Hapus file foto lama jika ada foto baru
+        const oldFilePath = path.join(
+          __dirname,
+          "..",
+          "..",
+          "public",
+          "upload",
+          campaign.photo
+        );
+        console.log("Path yang dibentuk:", oldFilePath);
+
+        // Menghapus file lama
+        fs.unlink(oldFilePath, (err) => {
+          if (err) console.log(err);
+          else {
+            console.log("\nDeleted file:", campaign.photo);
+          }
+        });
+
+        // Menggunakan file foto baru yang diupload
+        newPhoto = req.file.filename;
+      }
+
+      // Jika ada foto baru, tambahkan ke updateData
+      if (newPhoto !== campaign.photo) {
+        updateData.photo = newPhoto;
+      }
+
+      // Update campaign hanya dengan data yang berubah
+      const updatedCampaign = await Campaign.findByIdAndUpdate(
+        req.params._id,
+        updateData,
+        { new: true } // Mengembalikan data yang sudah diupdate
+      );
+
+      if (!updatedCampaign) {
+        return next({
+          name: "UpdateError",
+          message: "Gagal memperbarui campaign.",
+        });
+      }
+
+      // Kirim response sukses
+      ResponseAPI.success(res, updatedCampaign);
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 module.exports = campaignController;
